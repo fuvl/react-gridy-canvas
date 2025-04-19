@@ -1,0 +1,55 @@
+{
+  "name": "react-gridy-canvas",
+  "version": "0.1.0",
+  "description": "A draggable and resizable grid/canvas layout component for React with snapping, collision handling, and selection.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
+  "dependencies": {
+    "react-rnd": "^10.4.10"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "prettier": "^3.5.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.2.2"
+  },
+  "keywords": [
+    "react",
+    "layout",
+    "canvas",
+    "grid",
+    "draggable",
+    "resizable",
+    "react-rnd",
+    "gridy"
+  ],
+  "author": "fuvl",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fuvl/react-gridy-canvas.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ]
+}
