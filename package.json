@@ -12,7 +12,9 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "prettier --check .",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "react": ">=17.0.0",
@@ -28,7 +30,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tsup": "^8.4.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^3.1.1"
   },
   "keywords": [
     "react",

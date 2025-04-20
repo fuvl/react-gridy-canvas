@@ -1,15 +1,15 @@
 import { useState, useCallback, useRef, useEffect, RefObject, MouseEvent as ReactMouseEvent } from 'react'
 import { snapToGrid, doItemsOverlap } from './layout-utils'
-import { GridItem, SelectionRectangle, MousePosition } from '../types' // Renamed LayoutItem to GridItem
+import { GridItem, SelectionRectangle, MousePosition } from '../types'
 
-// --- Constants ---
-const ITEM_SELECTION_COVERAGE_THRESHOLD = 0.9 // 90% coverage required
-const MIN_DRAG_DISTANCE = 5 // Minimum pixels mouse must move to trigger drag listeners
+// Constants
+const ITEM_SELECTION_COVERAGE_THRESHOLD = 0.9
+const MIN_DRAG_DISTANCE = 5
 
-// --- Types ---
+// Types
 interface UseSelectionHandlerProps {
   canvasRef: RefObject<HTMLDivElement>
-  layout: GridItem[] // Renamed LayoutItem to GridItem
+  layout: GridItem[]
   width: number
   height: number
   snapGridUnit: number
@@ -17,7 +17,7 @@ interface UseSelectionHandlerProps {
   selectOnlyEmptySpace: boolean
   minSelectionArea: number
   isLocked: boolean
-  draggingItemIdRef: RefObject<string | null> // Pass refs that affect selection logic
+  draggingItemIdRef: RefObject<string | null>
   resizingItemIdRef: RefObject<string | null>
   dragHandleClassName?: string
   onSelectionEnd?: (
