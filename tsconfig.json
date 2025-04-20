@@ -9,7 +9,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true, // Let tsup handle emit
+    "noEmit": true,
     "jsx": "react-jsx",
 
     /* Linting */
@@ -24,6 +24,6 @@
     "sourceMap": true,
     "outDir": "dist"
   },
-  "include": ["src"], // Include the source directory within the package
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }
