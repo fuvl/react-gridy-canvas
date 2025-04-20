@@ -67,6 +67,10 @@ export interface GridProps {
     selectedItemIds: string[], // IDs of items covered >= threshold (if selectOnlyEmptySpace is false)
     clearSelectionFn: () => void,
   ) => void
+  /** If true, displays grid lines based on snapGridUnit */
+  showGridLines?: boolean
+  /** Optional CSS class name for the grid lines container */
+  gridLinesClassName?: string
   /** Children must be React elements with unique `key` props matching layout item IDs */
   children: ReactNode
   /** Optional custom components for resize handles */
@@ -75,6 +79,14 @@ export interface GridProps {
   dragHandleClassName?: string
   /** Optional function to provide dynamic class names for each item container (<Rnd>) */
   getItemClassName?: (itemId: string) => string
+  /** Called when an item drag starts; returns item ID and start position */
+  onDragStart?: (itemId: string, position: { x: number; y: number }) => void
+  /** Called when an item drag ends; returns item ID and end position */
+  onDragEnd?: (itemId: string, position: { x: number; y: number }) => void
+  /** Called when an item resize starts; returns item ID and start rect */
+  onResizeStart?: (itemId: string, rect: { x: number; y: number; width: number; height: number }) => void
+  /** Called when an item resize ends; returns item ID and end rect */
+  onResizeEnd?: (itemId: string, rect: { x: number; y: number; width: number; height: number }) => void
 }
 
 // Internal Types

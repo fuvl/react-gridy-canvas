@@ -9,6 +9,17 @@
   -ms-user-select: none;
 }
 
+.grid-lines {
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  background-origin: border-box;
+  pointer-events: none;
+  z-index: 0; /* Ensure lines are behind items */
+}
+
 .grid-item {
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
   transition:
@@ -20,6 +31,7 @@
   overflow: hidden;
   will-change: transform, width, height;
   box-sizing: border-box;
+  z-index: 1; /* Ensure items are above grid lines */
 }
 
 .grid-item > * {
@@ -39,7 +51,7 @@
   position: absolute;
   background: rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  z-index: 0;
+  z-index: 1; /* Ensure dropzone is above grid lines but below items being dragged */
   pointer-events: none;
   transition:
     left 0.05s ease-out,

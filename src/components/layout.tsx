@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode } from 'react'
+import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode, useMemo } from 'react'
 import { Rnd, type DraggableData, type RndResizeCallback, type RndResizeStartCallback } from 'react-rnd'
 import './styles.css'
 import { GridItem, GridProps } from '../types'
@@ -28,6 +28,12 @@ const Grid: React.FC<GridProps> = ({
   dragHandleClassName,
   getItemClassName,
   children,
+  showGridLines = false,
+  gridLinesClassName = '',
+  onDragStart: onDragStartProp,
+  onDragEnd: onDragEndProp,
+  onResizeStart: onResizeStartProp,
+  onResizeEnd: onResizeEndProp,
 }) => {
   // Internal interaction state
   const [previewLayout, setPreviewLayout] = useState<GridItem[] | null>(null)
@@ -96,9 +102,11 @@ const Grid: React.FC<GridProps> = ({
         setPreviewLayout(null)
         setCanDropPreview(true)
         setDraggedSize(undefined)
+        // invoke callback
+        onDragStartProp?.(itemId, { x: startPos.x, y: startPos.y })
       }
     },
-    [layout, isLocked, snapGridUnit, clearSelectionState],
+    [layout, isLocked, snapGridUnit, clearSelectionState, onDragStartProp],
   )
 
   const handleDrag = useCallback(
@@ -184,6 +192,8 @@ const Grid: React.FC<GridProps> = ({
         () => {},
         startPos,
       )
+      // invoke drag end callback
+      onDragEndProp?.(wasDraggingId, { x: snappedDropPos.x, y: snappedDropPos.y })
       let finalLayout: GridItem[]
       if (canDrop) {
         finalLayout = finalSimLayout.map((item: GridItem) =>
@@ -196,7 +206,7 @@ const Grid: React.FC<GridProps> = ({
       }
       onLayoutChange(finalLayout, layout) // Pass original layout as oldLayout
     },
-    [layout, isLocked, onLayoutChange, snapGridUnit, gap, width, height, shiftOnCollision],
+    [layout, isLocked, onLayoutChange, snapGridUnit, gap, width, height, shiftOnCollision, onDragEndProp],
   )
 
   const handleResizeStart: RndResizeStartCallback = useCallback(
@@ -215,8 +225,10 @@ const Grid: React.FC<GridProps> = ({
       setPreviewLayout(null)
       setCanDropPreview(true)
       setDraggedSize({ width: currentItem.width, height: currentItem.height })
+      // invoke resize start callback
+      onResizeStartProp?.(itemId, { x: currentItem.x, y: currentItem.y, width: currentItem.width, height: currentItem.height })
     },
-    [layout, isLocked, clearSelectionState],
+    [layout, isLocked, clearSelectionState, onResizeStartProp],
   )
 
   const handleResize: RndResizeCallback = useCallback(
@@ -300,6 +312,8 @@ const Grid: React.FC<GridProps> = ({
       const snappedWidth = Math.max(resizeGridUnit, snapToGrid(initialSize.width + delta.width, resizeGridUnit))
       const snappedHeight = Math.max(resizeGridUnit, snapToGrid(initialSize.height + delta.height, resizeGridUnit))
       const finalSize = { width: snappedWidth, height: snappedHeight }
+      // invoke resize end callback
+      onResizeEndProp?.(wasResizingId, { x: snappedX, y: snappedY, width: snappedWidth, height: snappedHeight })
       const { previewLayout: finalSimLayout, canDrop } = simulateQueueShift(
         layout,
         wasResizingId,
@@ -334,8 +348,21 @@ const Grid: React.FC<GridProps> = ({
       }
       onLayoutChange(finalLayout, layout) // Pass original layout as oldLayout
     },
-    [layout, isLocked, onLayoutChange, snapGridUnit, resizeGridUnit, gap, shiftOnCollision, width, height, draggedSize],
+    [layout, isLocked, onLayoutChange, snapGridUnit, resizeGridUnit, gap, shiftOnCollision, width, height, draggedSize, onResizeEndProp],
   )
+
+  // --- Grid Lines ---
+  const gridLinesStyle = useMemo(() => {
+    if (!showGridLines || snapGridUnit <= 0) return {}
+    const color = 'rgba(0, 0, 0, 0.08)' // Light gray lines
+    return {
+      backgroundImage: `
+        linear-gradient(to right, ${color} 1px, transparent 1px),
+        linear-gradient(to bottom, ${color} 1px, transparent 1px)
+      `,
+      backgroundSize: `${snapGridUnit}px ${snapGridUnit}px`,
+    }
+  }, [showGridLines, snapGridUnit])
 
   // Rendering
 
@@ -358,6 +385,9 @@ const Grid: React.FC<GridProps> = ({
     selectionRect && !isSelectionValidForStyling ? ' grid-selection-rectangle--invalid' : ''
   }`
 
+  // Combine default and custom grid lines class names
+  const combinedGridLinesClass = `grid-lines${gridLinesClassName ? ` ${gridLinesClassName}` : ''}`
+
   return (
     <div
       ref={canvasRef}
@@ -365,11 +395,15 @@ const Grid: React.FC<GridProps> = ({
       style={{
         width: `${width}px`,
         height: `${height}px`,
+        cursor: enableSelectionTool && !isLocked ? 'crosshair' : undefined,
       }}
       onMouseDown={handleSelectionMouseDown}
       onMouseMove={handleSelectionMouseMove}
       onMouseUp={handleSelectionMouseUp}
     >
+      {/* Render Grid Lines */}
+      {showGridLines && <div className={combinedGridLinesClass} style={gridLinesStyle} />}
+
       {dropPoint && showDropZoneShadow && (
         <div
           className={`grid-dropzone-shadow${dropZoneClassName ? ' ' + dropZoneClassName : ''}`}
