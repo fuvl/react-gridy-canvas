@@ -134,7 +134,7 @@ function App() {
   }, [])
 
   // Function to provide classes to CanvasLayout items
-  const getItemClassNameHandler = useCallback(
+  const getSelectedItemClassHandler = useCallback(
     (itemId: string): string => {
       // Use the renamed constant for selected item classes
       return selectedItems.includes(itemId) ? SELECTED_ITEM_CLASSES : ''
@@ -233,9 +233,8 @@ function App() {
           showDropZoneShadow={showDropZoneShadow}
           minSelectionArea={3000}
           dragHandleClassName={useCustomDragHandle ? DRAG_HANDLE_CLASS : undefined}
-          getItemClassName={getItemClassNameHandler} // Handler now uses the renamed constant
+          getSelectedItemClassName={getSelectedItemClassHandler} // renamed to use new prop name
           showGridLines={showGrid} // Pass the state to the prop
-          // Use the renamed constant for grid lines classes
           gridLinesClassName={CUSTOM_GRID_LINES_CLASSES}
         >
           {layout.map((item) => {

@@ -77,8 +77,8 @@ export interface GridProps {
   resizeHandleComponent?: HandleComponent
   /** Optional CSS class name for the drag handle element within children */
   dragHandleClassName?: string
-  /** Optional function to provide dynamic class names for each item container (<Rnd>) */
-  getItemClassName?: (itemId: string) => string
+  /** Optional function to provide dynamic class names for each item container (e.g. selected state) */
+  getSelectedItemClassName?: (itemId: string) => string
   /** Called when an item drag starts; returns item ID and start position */
   onDragStart?: (itemId: string, position: { x: number; y: number }) => void
   /** Called when an item drag ends; returns item ID and end position */

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode, useMemo } from 'react'
+import clsx from 'clsx'
 import { Rnd, type DraggableData, type RndResizeCallback, type RndResizeStartCallback } from 'react-rnd'
 import './styles.css'
 import { GridItem, GridProps } from '../types'
@@ -26,7 +27,7 @@ const Grid: React.FC<GridProps> = ({
   onSelectionEnd,
   resizeHandleComponent,
   dragHandleClassName,
-  getItemClassName,
+  getSelectedItemClassName,
   children,
   showGridLines = false,
   gridLinesClassName = '',
@@ -226,7 +227,12 @@ const Grid: React.FC<GridProps> = ({
       setCanDropPreview(true)
       setDraggedSize({ width: currentItem.width, height: currentItem.height })
       // invoke resize start callback
-      onResizeStartProp?.(itemId, { x: currentItem.x, y: currentItem.y, width: currentItem.width, height: currentItem.height })
+      onResizeStartProp?.(itemId, {
+        x: currentItem.x,
+        y: currentItem.y,
+        width: currentItem.width,
+        height: currentItem.height,
+      })
     },
     [layout, isLocked, clearSelectionState, onResizeStartProp],
   )
@@ -348,7 +354,19 @@ const Grid: React.FC<GridProps> = ({
       }
       onLayoutChange(finalLayout, layout) // Pass original layout as oldLayout
     },
-    [layout, isLocked, onLayoutChange, snapGridUnit, resizeGridUnit, gap, shiftOnCollision, width, height, draggedSize, onResizeEndProp],
+    [
+      layout,
+      isLocked,
+      onLayoutChange,
+      snapGridUnit,
+      resizeGridUnit,
+      gap,
+      shiftOnCollision,
+      width,
+      height,
+      draggedSize,
+      onResizeEndProp,
+    ],
   )
 
   // --- Grid Lines ---
@@ -377,16 +395,21 @@ const Grid: React.FC<GridProps> = ({
   const dropPoint = dropZone
   const outlineColor = canDropPreview ? '#ff9800' : 'red'
 
-  const gridClasses = `grid-layout${className ? ' ' + className : ''}${
-    enableSelectionTool && !isLocked ? ' cursor-crosshair' : ''
-  }`
+  const gridClasses = clsx(
+    'grid-layout',
+    enableSelectionTool && !isLocked && 'cursor-crosshair',
+    className, // user classes last
+  )
 
   const selectionRectClass = `grid-selection-rectangle${
     selectionRect && !isSelectionValidForStyling ? ' grid-selection-rectangle--invalid' : ''
   }`
 
   // Combine default and custom grid lines class names
-  const combinedGridLinesClass = `grid-lines${gridLinesClassName ? ` ${gridLinesClassName}` : ''}`
+  const combinedGridLinesClass = clsx(
+    'grid-lines',
+    gridLinesClassName, // user classes last
+  )
 
   return (
     <div
@@ -457,10 +480,12 @@ const Grid: React.FC<GridProps> = ({
           cursorStyle = isResizing ? 'auto' : 'move'
         }
 
-        const dynamicClasses = getItemClassName ? getItemClassName(item.id) : ''
-        const combinedClasses = `grid-item${
-          showOutline ? ' grid-item-outline' : ''
-        }${dynamicClasses ? ` ${dynamicClasses}` : ''}`
+        const dynamicClasses = getSelectedItemClassName ? getSelectedItemClassName(item.id) : ''
+        const combinedClasses = clsx(
+          'grid-item',
+          showOutline && 'grid-item-outline',
+          dynamicClasses, // user classes last
+        )
 
         return (
           <Rnd
