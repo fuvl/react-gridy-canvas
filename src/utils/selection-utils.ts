@@ -12,6 +12,8 @@ interface UseSelectionHandlerProps {
   layout: GridItem[]
   width: number
   height: number
+  /** Scale factor of the canvas */
+  scale?: number
   snapGridUnit: number | [number, number]
   enableSelectionTool: boolean
   selectOnlyEmptySpace: boolean
@@ -44,6 +46,7 @@ export const useSelectionHandler = ({
   layout,
   width,
   height,
+  scale = 1,
   snapGridUnit,
   enableSelectionTool,
   selectOnlyEmptySpace,
@@ -111,8 +114,8 @@ export const useSelectionHandler = ({
       if (!isSelecting || !selectionStart || !canvasRef.current) return
 
       const rect = canvasRef.current.getBoundingClientRect()
-      const relX = clientX - rect.left
-      const relY = clientY - rect.top
+      const relX = (clientX - rect.left) / scale
+      const relY = (clientY - rect.top) / scale
       const currentX = Math.max(0, Math.min(relX, width))
       const currentY = Math.max(0, Math.min(relY, height))
       const startX = selectionStart.x
@@ -167,6 +170,7 @@ export const useSelectionHandler = ({
       minSelectionArea,
       selectOnlyEmptySpace,
       layout,
+      scale,
     ],
   )
 
@@ -181,8 +185,8 @@ export const useSelectionHandler = ({
       }
 
       const rect = canvasRef.current.getBoundingClientRect()
-      const relX = clientX - rect.left
-      const relY = clientY - rect.top
+      const relX = (clientX - rect.left) / scale
+      const relY = (clientY - rect.top) / scale
       const finalCurrentX = Math.max(0, Math.min(relX, width))
       const finalCurrentY = Math.max(0, Math.min(relY, height))
       const startX = selectionStart.x
@@ -273,6 +277,7 @@ export const useSelectionHandler = ({
       layout,
       onSelectionEnd,
       clearSelectionState,
+      scale,
     ],
   )
 
@@ -318,8 +323,8 @@ export const useSelectionHandler = ({
 
       if (!canvasRef.current) return
       const rect = canvasRef.current.getBoundingClientRect()
-      const startX = e.clientX - rect.left
-      const startY = e.clientY - rect.top
+      const startX = (e.clientX - rect.left) / scale
+      const startY = (e.clientY - rect.top) / scale
 
       if (startX < 0 || startX > width || startY < 0 || startY > height) {
         return
@@ -350,6 +355,7 @@ export const useSelectionHandler = ({
       canvasRef,
       draggingItemIdRef,
       resizingItemIdRef,
+      scale,
     ],
   )
 
@@ -360,8 +366,8 @@ export const useSelectionHandler = ({
       if (!listenersAttachedRef.current) {
         if (canvasRef.current) {
           const rect = canvasRef.current.getBoundingClientRect()
-          const relCurrentX = e.clientX - rect.left
-          const relCurrentY = e.clientY - rect.top
+          const relCurrentX = (e.clientX - rect.left) / scale
+          const relCurrentY = (e.clientY - rect.top) / scale
           const dx = Math.abs(relCurrentX - selectionStart.x)
           const dy = Math.abs(relCurrentY - selectionStart.y)
           const distance = Math.sqrt(dx * dx + dy * dy)
@@ -378,7 +384,7 @@ export const useSelectionHandler = ({
 
       processSelectionMove(e.clientX, e.clientY)
     },
-    [isSelecting, selectionStart, canvasRef, handleGlobalMouseMove, handleGlobalMouseUp, processSelectionMove],
+    [isSelecting, selectionStart, canvasRef, handleGlobalMouseMove, handleGlobalMouseUp, processSelectionMove, scale],
   )
 
   const handleMouseUp = useCallback(
