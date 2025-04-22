@@ -13,6 +13,7 @@ const Grid: React.FC<GridProps> = ({
   width,
   height,
   scale = 1,
+  transformOrigin = '0px 0px',
   gridUnitSize = 10,
   resizeUnitSize = 10,
   gap = 0,
@@ -444,7 +445,7 @@ const Grid: React.FC<GridProps> = ({
         width: `${width}px`,
         height: `${height}px`,
         transform: `scale(${scale})`,
-        transformOrigin: '0 0',
+        transformOrigin,
         cursor: enableSelectionTool && !isLocked ? 'crosshair' : undefined,
       }}
       onMouseDown={handleSelectionMouseDown}
