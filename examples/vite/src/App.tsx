@@ -3,7 +3,7 @@ import { Button } from './components/ui/button'
 import Grid, { GridItem, SelectionRectangle, MousePosition } from '../../../src/index'
 import { Switch } from './components/ui/switch'
 import { Popover, PopoverTrigger, PopoverContent } from './components/ui/popover'
-import { SquareDashedMousePointer, ZoomOut, ZoomIn } from 'lucide-react'
+import { SquareDashedMousePointer } from 'lucide-react'
 import ItemCard from './components/ItemCard'
 import './App.css'
 
@@ -33,8 +33,7 @@ function App() {
   const [enableSelectionTool, setEnableSelectionTool] = useState(false)
   const [useCustomDragHandle, setUseCustomDragHandle] = useState(false)
   const [selectOnlyEmptySpace, setSelectOnlyEmptySpace] = useState(true)
-  const [showGrid, setShowGrid] = useState(false)
-  const [scale, setScale] = useState<number>(1)
+  const [showGrid, setShowGrid] = useState(false) // State for grid lines
 
   // Popover/Selection State
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
@@ -201,17 +200,6 @@ function App() {
           <label>Grid Lines</label>
           <Switch checked={showGrid} onCheckedChange={setShowGrid} />
         </div>
-        <div className="flex justify-between items-center w-full">
-          <label>Scale</label>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={() => setScale(s => Math.max(0.1, s - 0.1))}>
-              <ZoomOut className="h-5 w-5" />
-            </Button>
-            <Button variant="outline" onClick={() => setScale(s => +(s + 0.1).toFixed(1))}>
-              <ZoomIn className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
       </div>
       <Popover open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
         <PopoverTrigger style={popoverPositionStyle} />
@@ -239,7 +227,6 @@ function App() {
 
       <div className="mt-8 flex justify-center">
         <Grid
-          scale={scale}
           layout={layout}
           onLayoutChange={handleLayoutChange}
           width={800}

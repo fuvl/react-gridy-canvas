@@ -12,7 +12,6 @@ const DRAG_THRESHOLD = 5
 const Grid: React.FC<GridProps> = ({
   width,
   height,
-  scale = 1,
   gridUnitSize = 10,
   resizeUnitSize = 10,
   gap = 0,
@@ -44,10 +43,13 @@ const Grid: React.FC<GridProps> = ({
   // derive numeric grid units for x/y
   const [gridUnitX, gridUnitY] = Array.isArray(gridUnitSize) ? gridUnitSize : [gridUnitSize, gridUnitSize]
   const [resizeUnitW, resizeUnitH] = Array.isArray(resizeUnitSize) ? resizeUnitSize : [resizeUnitSize, resizeUnitSize]
+  // effective snap and resize units
   const effSnapX = gridUnitX
   const effSnapY = gridUnitY
   const effResizeW = resizeUnitW
   const effResizeH = resizeUnitH
+  // compute actual pixel gap: number of gap units * gridUnitX
+  // pixelGap now handled inside simulateQueueShift
   const computedMinSelectionArea = minSelectionArea ?? gridUnitX * gridUnitY
 
   // Internal interaction state
@@ -77,7 +79,6 @@ const Grid: React.FC<GridProps> = ({
     layout,
     width,
     height,
-    scale,
     snapGridUnit: gridUnitSize,
     enableSelectionTool,
     selectOnlyEmptySpace,
@@ -363,6 +364,7 @@ const Grid: React.FC<GridProps> = ({
       const snappedWidth = Math.max(effResizeW, snapToGrid(initialSize.width + delta.width, effResizeW))
       const snappedHeight = Math.max(effResizeH, snapToGrid(initialSize.height + delta.height, effResizeH))
       const finalSize = { width: snappedWidth, height: snappedHeight }
+
       onResizeEndProp?.(wasResizingId, { x: snappedX, y: snappedY, width: snappedWidth, height: snappedHeight })
       const { previewLayout: finalSimLayout, canDrop } = simulateQueueShift(
         layout,
@@ -415,6 +417,8 @@ const Grid: React.FC<GridProps> = ({
       gridUnitSize,
     ],
   )
+
+  // --- Grid Lines ---
   // Rendering
   const childrenMap = new Map<string, ReactNode>()
   Children.forEach(children, (child) => {
@@ -443,8 +447,6 @@ const Grid: React.FC<GridProps> = ({
       style={{
         width: `${width}px`,
         height: `${height}px`,
-        transform: `scale(${scale})`,
-        transformOrigin: '0 0',
         cursor: enableSelectionTool && !isLocked ? 'crosshair' : undefined,
       }}
       onMouseDown={handleSelectionMouseDown}
@@ -518,7 +520,6 @@ const Grid: React.FC<GridProps> = ({
 
         return (
           <Rnd
-            scale={scale}
             dragStartThreshold={5}
             key={item.id}
             size={currentSize}

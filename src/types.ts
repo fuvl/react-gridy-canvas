@@ -36,8 +36,6 @@ export interface GridProps {
   width: number
   /** Height of the canvas */
   height: number
-  /** Scale (zoom) factor for the grid container */
-  scale?: number
   /** Grid unit size for snapping position; can be single number or [x, y] */
   gridUnitSize?: number | [number, number]
   /** Grid unit size for snapping resize dimensions; single number or [width, height] */

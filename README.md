@@ -15,7 +15,6 @@ A flexible grid/canvas layout component for React, built with TypeScript. It uti
   - Provides coordinates, validity status, and selected item IDs via callback.
 - **Custom Handles:** Supports custom components for resize handles and specific drag handle elements.
 - **Dynamic Styling:** Allows applying custom classes to the canvas, drop zone shadow, and individual items.
-- **Zoom / Scale Support:** Optional `scale` prop lets you zoom the entire grid while preserving correct drag, resize and selection behaviors.
 
 ## Installation
 
@@ -68,7 +67,6 @@ function MyComponent() {
     enableSelectionTool: true,
     gridUnitSize: 10,
     resizeUnitSize: 10,
-    scale: 1,
     onDragStart: (id, pos) => console.log('drag started', id, pos),
     onDragEnd: (id, pos) => console.log('drag ended', id, pos),
     onResizeStart: (id, rect) => console.log('resize started', id, rect),
@@ -128,7 +126,6 @@ export default MyComponent
 | `onDragEnd`                | `(itemId: string, position: { x: number; y: number }) => void`                                                                                                     | `undefined`                   | Callback when an item drag ends; provides ID and final position (snapped).                                                                     |
 | `onResizeStart`            | `(itemId: string, rect: { x: number; y: number; width: number; height: number }) => void`                                                                          | `undefined`                   | Callback when an item resize begins; provides ID and starting rectangle (snapped).                                                             |
 | `onResizeEnd`              | `(itemId: string, rect: { x: number; y: number; width: number; height: number }) => void`                                                                          | `undefined`                   | Callback when an item resize ends; provides ID and final rectangle (snapped).                                                                  |
-| `scale`                    | `number`                                                                                                                                                           | `1`                           | Optional CSS scale factor for the grid container; zooms the canvas while maintaining accurate interactions                                     |
 
 ## Callbacks
 
