@@ -2,19 +2,21 @@ import { GridItem } from '../types'
 
 // Collision and Overlap Helpers
 
-export function doItemsOverlap(item1: GridItem, item2: GridItem, gap: number): boolean {
-  const inflate = gap / 2
+export function doItemsOverlap(item1: GridItem, item2: GridItem, gap: number | [number, number]): boolean {
+  const [gapX, gapY] = Array.isArray(gap) ? gap : [gap, gap]
+  const inflateX = gapX / 2
+  const inflateY = gapY / 2
   const a = {
-    left: item1.x - inflate,
-    right: item1.x + item1.width + inflate,
-    top: item1.y - inflate,
-    bottom: item1.y + item1.height + inflate,
+    left: item1.x - inflateX,
+    right: item1.x + item1.width + inflateX,
+    top: item1.y - inflateY,
+    bottom: item1.y + item1.height + inflateY,
   }
   const b = {
-    left: item2.x - inflate,
-    right: item2.x + item2.width + inflate,
-    top: item2.y - inflate,
-    bottom: item2.y + item2.height + inflate,
+    left: item2.x - inflateX,
+    right: item2.x + item2.width + inflateX,
+    top: item2.y - inflateY,
+    bottom: item2.y + item2.height + inflateY,
   }
   const horizontalOverlap = a.left < b.right && a.right > b.left
   const verticalOverlap = a.top < b.bottom && a.bottom > b.top

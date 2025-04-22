@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode, useMemo } from 'react'
+import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode } from 'react'
 import clsx from 'clsx'
 import { Rnd, type DraggableData, type RndResizeCallback, type RndResizeStartCallback } from 'react-rnd'
 import './styles.css'
@@ -7,11 +7,13 @@ import { snapToGrid } from '../utils/layout-utils'
 import { simulateQueueShift } from '../utils/shift-simulator'
 import { useSelectionHandler } from '../utils/selection-utils'
 
+const DRAG_THRESHOLD = 5
+
 const Grid: React.FC<GridProps> = ({
   width,
   height,
-  snapGridUnit = 10,
-  resizeGridUnit = 10,
+  gridUnitSize = 10,
+  resizeUnitSize = 10,
   gap = 0,
   shiftOnCollision = true,
   isLocked = false,
@@ -23,7 +25,7 @@ const Grid: React.FC<GridProps> = ({
   dropZoneClassName = '',
   enableSelectionTool = false,
   selectOnlyEmptySpace = false,
-  minSelectionArea = snapGridUnit * snapGridUnit,
+  minSelectionArea,
   onSelectionEnd,
   resizeHandleComponent,
   dragHandleClassName,
@@ -31,11 +33,25 @@ const Grid: React.FC<GridProps> = ({
   children,
   showGridLines = false,
   gridLinesClassName = '',
+  selectionRectangleClassName,
+  invalidSelectionClassName,
   onDragStart: onDragStartProp,
   onDragEnd: onDragEndProp,
   onResizeStart: onResizeStartProp,
   onResizeEnd: onResizeEndProp,
 }) => {
+  // derive numeric grid units for x/y
+  const [gridUnitX, gridUnitY] = Array.isArray(gridUnitSize) ? gridUnitSize : [gridUnitSize, gridUnitSize]
+  const [resizeUnitW, resizeUnitH] = Array.isArray(resizeUnitSize) ? resizeUnitSize : [resizeUnitSize, resizeUnitSize]
+  // effective snap and resize units
+  const effSnapX = gridUnitX
+  const effSnapY = gridUnitY
+  const effResizeW = resizeUnitW
+  const effResizeH = resizeUnitH
+  // compute actual pixel gap: number of gap units * gridUnitX
+  // pixelGap now handled inside simulateQueueShift
+  const computedMinSelectionArea = minSelectionArea ?? gridUnitX * gridUnitY
+
   // Internal interaction state
   const [previewLayout, setPreviewLayout] = useState<GridItem[] | null>(null)
   const [canDropPreview, setCanDropPreview] = useState<boolean>(true)
@@ -63,15 +79,15 @@ const Grid: React.FC<GridProps> = ({
     layout,
     width,
     height,
-    snapGridUnit,
+    snapGridUnit: gridUnitSize,
     enableSelectionTool,
     selectOnlyEmptySpace,
-    minSelectionArea,
+    minSelectionArea: computedMinSelectionArea,
     isLocked,
     draggingItemIdRef,
     resizingItemIdRef,
     dragHandleClassName,
-    onSelectionEnd: onSelectionEnd,
+    onSelectionEnd,
   })
 
   // Drag/Resize Callbacks
@@ -86,8 +102,8 @@ const Grid: React.FC<GridProps> = ({
       if (currentItem && itemId) {
         const startPos: GridItem = {
           id: itemId,
-          x: snapToGrid(currentItem.x, snapGridUnit),
-          y: snapToGrid(currentItem.y, snapGridUnit),
+          x: snapToGrid(currentItem.x, effSnapX),
+          y: snapToGrid(currentItem.y, effSnapY),
           width: currentItem.width,
           height: currentItem.height,
         }
@@ -98,27 +114,35 @@ const Grid: React.FC<GridProps> = ({
           width: currentItem.width,
           height: currentItem.height,
         }
-        dropZoneRef.current = { ...startPos }
-        setDropZone({ ...startPos })
-        setPreviewLayout(null)
-        setCanDropPreview(true)
-        setDraggedSize(undefined)
-        // invoke callback
         onDragStartProp?.(itemId, { x: startPos.x, y: startPos.y })
       }
     },
-    [layout, isLocked, snapGridUnit, clearSelectionState, onDragStartProp],
+    [layout, isLocked, effSnapX, effSnapY, clearSelectionState, onDragStartProp],
   )
 
   const handleDrag = useCallback(
     (_e: any, d: DraggableData) => {
       if (isLocked || !draggingItemIdRef.current || !draggingItemSizeRef.current) return
+      const startPos = dragStartPosRef.current
+      if (!startPos) return
+      // check movement threshold
+      const dx = d.x - startPos.x
+      const dy = d.y - startPos.y
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) {
+        return
+      }
 
       const itemId = draggingItemIdRef.current
+      if (dropZoneRef.current == null) {
+        dropZoneRef.current = { ...startPos }
+        setDropZone({ ...startPos })
+        setPreviewLayout(null)
+        setCanDropPreview(true)
+      }
       const currentItemSize = draggingItemSizeRef.current
       const snappedSimPos = {
-        x: snapToGrid(d.x, snapGridUnit),
-        y: snapToGrid(d.y, snapGridUnit),
+        x: snapToGrid(d.x, effSnapX),
+        y: snapToGrid(d.y, effSnapY),
       }
       const {
         previewLayout: simResultLayout,
@@ -128,7 +152,7 @@ const Grid: React.FC<GridProps> = ({
         layout,
         itemId,
         snappedSimPos,
-        snapGridUnit,
+        gridUnitSize,
         gap,
         width,
         height,
@@ -150,6 +174,7 @@ const Grid: React.FC<GridProps> = ({
         },
         dragStartPosRef.current ?? undefined,
       )
+      // Standard preview update
       const nextPreviewLayout = simResultLayout.map((item: GridItem) =>
         item.id === itemId ? { ...item, x: d.x, y: d.y } : item,
       )
@@ -157,7 +182,7 @@ const Grid: React.FC<GridProps> = ({
       setCanDropPreview(canDrop)
       setDropZone(dropZoneResult ?? null)
     },
-    [isLocked, layout, shiftOnCollision, snapGridUnit, gap, width, height],
+    [isLocked, layout, shiftOnCollision, effSnapX, effSnapY, width, height, gap, gridUnitSize],
   )
 
   const handleDragStop = useCallback(
@@ -176,14 +201,14 @@ const Grid: React.FC<GridProps> = ({
       dropZoneRef.current = null
       if (isLocked || !wasDraggingId || !startPos || !lastValidPosForSim) return
       const snappedDropPos = {
-        x: snapToGrid(d.x, snapGridUnit),
-        y: snapToGrid(d.y, snapGridUnit),
+        x: snapToGrid(d.x, effSnapX),
+        y: snapToGrid(d.y, effSnapY),
       }
       const { previewLayout: finalSimLayout, canDrop } = simulateQueueShift(
         layout,
         wasDraggingId,
         snappedDropPos,
-        snapGridUnit,
+        gridUnitSize,
         gap,
         width,
         height,
@@ -193,21 +218,29 @@ const Grid: React.FC<GridProps> = ({
         () => {},
         startPos,
       )
-      // invoke drag end callback
-      onDragEndProp?.(wasDraggingId, { x: snappedDropPos.x, y: snappedDropPos.y })
-      let finalLayout: GridItem[]
-      if (canDrop) {
-        finalLayout = finalSimLayout.map((item: GridItem) =>
-          item.id === wasDraggingId ? { ...item, x: snappedDropPos.x, y: snappedDropPos.y } : item,
-        )
-      } else {
-        finalLayout = layout.map((item: GridItem) =>
-          item.id === wasDraggingId ? { ...item, x: lastValidPosForSim.x, y: lastValidPosForSim.y } : item,
-        )
-      }
-      onLayoutChange(finalLayout, layout) // Pass original layout as oldLayout
+
+      let finalLayout: GridItem[] = canDrop
+        ? finalSimLayout.map((item: GridItem) =>
+            item.id === wasDraggingId ? { ...item, x: snappedDropPos.x, y: snappedDropPos.y } : item,
+          )
+        : layout.map((item: GridItem) =>
+            item.id === wasDraggingId ? { ...item, x: lastValidPosForSim.x, y: lastValidPosForSim.y } : item,
+          )
+      onLayoutChange(finalLayout, layout)
     },
-    [layout, isLocked, onLayoutChange, snapGridUnit, gap, width, height, shiftOnCollision, onDragEndProp],
+    [
+      layout,
+      isLocked,
+      onLayoutChange,
+      effSnapX,
+      effSnapY,
+      width,
+      height,
+      shiftOnCollision,
+      onDragEndProp,
+      gap,
+      gridUnitSize,
+    ],
   )
 
   const handleResizeStart: RndResizeStartCallback = useCallback(
@@ -226,7 +259,7 @@ const Grid: React.FC<GridProps> = ({
       setPreviewLayout(null)
       setCanDropPreview(true)
       setDraggedSize({ width: currentItem.width, height: currentItem.height })
-      // invoke resize start callback
+
       onResizeStartProp?.(itemId, {
         x: currentItem.x,
         y: currentItem.y,
@@ -244,12 +277,12 @@ const Grid: React.FC<GridProps> = ({
       const itemId = resizingItemIdRef.current
       const initialSize = draggedSize
       const originalItemState = layout.find((i: GridItem) => i.id === itemId)
-      const snappedX = snapToGrid(position.x, snapGridUnit)
-      const snappedY = snapToGrid(position.y, snapGridUnit)
+      const snappedX = snapToGrid(position.x, effSnapX)
+      const snappedY = snapToGrid(position.y, effSnapY)
       const potentialWidth = initialSize.width + delta.width
       const potentialHeight = initialSize.height + delta.height
-      const snappedWidth = Math.max(resizeGridUnit, snapToGrid(potentialWidth, resizeGridUnit))
-      const snappedHeight = Math.max(resizeGridUnit, snapToGrid(potentialHeight, resizeGridUnit))
+      const snappedWidth = Math.max(effResizeW, snapToGrid(potentialWidth, effResizeW))
+      const snappedHeight = Math.max(effResizeH, snapToGrid(potentialHeight, effResizeH))
       const currentSnappedSize = { width: snappedWidth, height: snappedHeight } // Use this size
       const {
         previewLayout: simResultLayout,
@@ -259,7 +292,7 @@ const Grid: React.FC<GridProps> = ({
         layout,
         itemId,
         { x: snappedX, y: snappedY },
-        snapGridUnit,
+        gridUnitSize,
         gap,
         width,
         height,
@@ -296,7 +329,20 @@ const Grid: React.FC<GridProps> = ({
       setCanDropPreview(canDrop)
       setDropZone(dropZoneResult ?? null)
     },
-    [layout, isLocked, shiftOnCollision, snapGridUnit, resizeGridUnit, gap, width, height, draggedSize],
+    [
+      layout,
+      isLocked,
+      shiftOnCollision,
+      effSnapX,
+      effSnapY,
+      effResizeW,
+      effResizeH,
+      width,
+      height,
+      draggedSize,
+      gap,
+      gridUnitSize,
+    ],
   )
 
   const handleResizeStop: RndResizeCallback = useCallback(
@@ -313,25 +359,25 @@ const Grid: React.FC<GridProps> = ({
       setDraggedSize(undefined)
       dropZoneRef.current = null
       if (isLocked || !wasResizingId || !initialSize || !itemBeforeResize || !lastValidPosForSim) return
-      const snappedX = snapToGrid(position.x, snapGridUnit)
-      const snappedY = snapToGrid(position.y, snapGridUnit)
-      const snappedWidth = Math.max(resizeGridUnit, snapToGrid(initialSize.width + delta.width, resizeGridUnit))
-      const snappedHeight = Math.max(resizeGridUnit, snapToGrid(initialSize.height + delta.height, resizeGridUnit))
+      const snappedX = snapToGrid(position.x, effSnapX)
+      const snappedY = snapToGrid(position.y, effSnapY)
+      const snappedWidth = Math.max(effResizeW, snapToGrid(initialSize.width + delta.width, effResizeW))
+      const snappedHeight = Math.max(effResizeH, snapToGrid(initialSize.height + delta.height, effResizeH))
       const finalSize = { width: snappedWidth, height: snappedHeight }
-      // invoke resize end callback
+
       onResizeEndProp?.(wasResizingId, { x: snappedX, y: snappedY, width: snappedWidth, height: snappedHeight })
       const { previewLayout: finalSimLayout, canDrop } = simulateQueueShift(
         layout,
         wasResizingId,
         { x: snappedX, y: snappedY },
-        snapGridUnit,
+        gridUnitSize,
         gap,
         width,
         height,
         finalSize,
         shiftOnCollision,
         lastValidPosForSim,
-        () => {}, // No need to update ref on stop
+        () => {},
         itemBeforeResize,
       )
       let finalLayout: GridItem[]
@@ -352,38 +398,28 @@ const Grid: React.FC<GridProps> = ({
             : item,
         )
       }
-      onLayoutChange(finalLayout, layout) // Pass original layout as oldLayout
+      onLayoutChange(finalLayout, layout)
     },
     [
       layout,
       isLocked,
       onLayoutChange,
-      snapGridUnit,
-      resizeGridUnit,
-      gap,
+      effSnapX,
+      effSnapY,
+      effResizeW,
+      effResizeH,
       shiftOnCollision,
       width,
       height,
       draggedSize,
       onResizeEndProp,
+      gap,
+      gridUnitSize,
     ],
   )
 
   // --- Grid Lines ---
-  const gridLinesStyle = useMemo(() => {
-    if (!showGridLines || snapGridUnit <= 0) return {}
-    const color = 'rgba(0, 0, 0, 0.08)' // Light gray lines
-    return {
-      backgroundImage: `
-        linear-gradient(to right, ${color} 1px, transparent 1px),
-        linear-gradient(to bottom, ${color} 1px, transparent 1px)
-      `,
-      backgroundSize: `${snapGridUnit}px ${snapGridUnit}px`,
-    }
-  }, [showGridLines, snapGridUnit])
-
   // Rendering
-
   const childrenMap = new Map<string, ReactNode>()
   Children.forEach(children, (child) => {
     if (isValidElement(child) && child.key != null) {
@@ -395,22 +431,15 @@ const Grid: React.FC<GridProps> = ({
   const dropPoint = dropZone
   const outlineColor = canDropPreview ? '#ff9800' : 'red'
 
-  const gridClasses = clsx(
-    'grid-layout',
-    enableSelectionTool && !isLocked && 'cursor-crosshair',
-    className, // user classes last
-  )
+  const gridClasses = clsx('grid-layout', enableSelectionTool && !isLocked && 'cursor-crosshair', className)
 
-  const selectionRectClass = `grid-selection-rectangle${
-    selectionRect && !isSelectionValidForStyling ? ' grid-selection-rectangle--invalid' : ''
-  }`
+  // Combine default and custom selection rectangle classes
+  const selectionBaseClass = selectionRectangleClassName || 'grid-selection-rectangle'
+  const invalidBaseClass = invalidSelectionClassName || 'grid-selection-rectangle--invalid'
+  const selectionRectClass = clsx(selectionBaseClass, selectionRect && !isSelectionValidForStyling && invalidBaseClass)
 
   // Combine default and custom grid lines class names
-  const combinedGridLinesClass = clsx(
-    'grid-lines',
-    gridLinesClassName, // user classes last
-  )
-
+  const combinedGridLinesClass = clsx('grid-lines', gridLinesClassName)
   return (
     <div
       ref={canvasRef}
@@ -424,9 +453,12 @@ const Grid: React.FC<GridProps> = ({
       onMouseMove={handleSelectionMouseMove}
       onMouseUp={handleSelectionMouseUp}
     >
-      {/* Render Grid Lines */}
-      {showGridLines && <div className={combinedGridLinesClass} style={gridLinesStyle} />}
-
+      {showGridLines && (
+        <div
+          className={combinedGridLinesClass}
+          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
+        />
+      )}
       {dropPoint && showDropZoneShadow && (
         <div
           className={`grid-dropzone-shadow${dropZoneClassName ? ' ' + dropZoneClassName : ''}`}
@@ -439,7 +471,6 @@ const Grid: React.FC<GridProps> = ({
           }}
         />
       )}
-
       {selectionRect && (
         <div
           className={selectionRectClass}
@@ -471,6 +502,9 @@ const Grid: React.FC<GridProps> = ({
           return null
         }
 
+        // Determine if this specific item is locked (global or per-item)
+        const itemLocked = isLocked || item.locked
+
         let cursorStyle: string
         if (enableSelectionTool && !isLocked) {
           cursorStyle = 'crosshair'
@@ -479,25 +513,23 @@ const Grid: React.FC<GridProps> = ({
         } else {
           cursorStyle = isResizing ? 'auto' : 'move'
         }
+        if (itemLocked) cursorStyle = 'default'
 
         const dynamicClasses = getSelectedItemClassName ? getSelectedItemClassName(item.id) : ''
-        const combinedClasses = clsx(
-          'grid-item',
-          showOutline && 'grid-item-outline',
-          dynamicClasses, // user classes last
-        )
+        const combinedClasses = clsx('grid-item', showOutline && 'grid-item-outline', dynamicClasses)
 
         return (
           <Rnd
+            dragStartThreshold={5}
             key={item.id}
             size={currentSize}
             position={currentPos}
             bounds="parent"
-            resizeGrid={[resizeGridUnit, resizeGridUnit]}
-            minWidth={resizeGridUnit}
-            minHeight={resizeGridUnit}
-            disableDragging={isLocked || (enableSelectionTool && !isActive)}
-            enableResizing={!isLocked && !(enableSelectionTool && !isActive)}
+            resizeGrid={[effResizeW, effResizeH]}
+            minWidth={effResizeW}
+            minHeight={effResizeH}
+            disableDragging={itemLocked || (enableSelectionTool && !isActive)}
+            enableResizing={!itemLocked && !(enableSelectionTool && !isActive)}
             onDragStart={handleDragStart}
             onDrag={handleDrag}
             onDragStop={handleDragStop}

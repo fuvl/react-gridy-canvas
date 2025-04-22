@@ -1,17 +1,17 @@
 import { useState, useRef, useCallback, CSSProperties } from 'react'
 import { Button } from './components/ui/button'
-import { Card } from './components/ui/card'
 import Grid, { GridItem, SelectionRectangle, MousePosition } from '../../../src/index'
-import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover'
 import { Switch } from './components/ui/switch'
+import { Popover, PopoverTrigger, PopoverContent } from './components/ui/popover'
 import { SquareDashedMousePointer } from 'lucide-react'
-import './App.css' // Make sure App.css is imported
+import ItemCard from './components/ItemCard'
+import './App.css'
 
 // Initial data for layout
 const initialLayoutData: GridItem[] = [
-  { id: '1', x: 0, y: 0, width: 100, height: 100 },
-  { id: '2', x: 120, y: 0, width: 100, height: 100 },
-  { id: '3', x: 240, y: 0, width: 100, height: 100 },
+  { id: '1', x: 0, y: 0, width: 100, height: 80 },
+  { id: '2', x: 120, y: 0, width: 100, height: 80 },
+  { id: '3', x: 240, y: 0, width: 100, height: 80 },
 ]
 
 // Define the class name for the drag handle
@@ -98,7 +98,7 @@ function App() {
     setLayout((prev) => prev.filter((item: GridItem) => !selectedItems.includes(item.id)))
     setIsPopoverOpen(false)
     clearCurrentSelection()
-    setEnableSelectionTool(false) // turn off selection tool after deletion
+    setEnableSelectionTool(false) 
   }, [selectedItems, clearCurrentSelection, setEnableSelectionTool])
 
   // Add a new card based on the stored selection rectangle
@@ -141,6 +141,16 @@ function App() {
     },
     [selectedItems],
   )
+
+  // Toggle lock flag for an item
+  const toggleItemLock = useCallback((id: string) => {
+    setLayout((prev) => prev.map(item => item.id === id ? { ...item, locked: !item.locked } : item));
+  }, []);
+
+  // Toggle disableCollision flag for an item
+  const toggleItemDisableCollision = useCallback((id: string) => {
+    setLayout(prev => prev.map(item => item.id === id ? { ...item, disableCollision: !item.disableCollision } : item));
+  }, []);
 
   return (
     <div className="p-8 space-y-8 relative flex flex-col items-center">
@@ -222,10 +232,10 @@ function App() {
           width={800}
           height={600}
           isLocked={false}
-          gap={10}
+          gap={1}
           shiftOnCollision={shiftOnCollision}
-          snapGridUnit={10}
-          resizeGridUnit={10}
+          gridUnitSize={10}
+          resizeUnitSize={10}
           showOutline={showOutline}
           enableSelectionTool={enableSelectionTool}
           onSelectionEnd={handleSelectionEnd}
@@ -233,39 +243,20 @@ function App() {
           showDropZoneShadow={showDropZoneShadow}
           minSelectionArea={3000}
           dragHandleClassName={useCustomDragHandle ? DRAG_HANDLE_CLASS : undefined}
-          getSelectedItemClassName={getSelectedItemClassHandler} // renamed to use new prop name
-          showGridLines={showGrid} // Pass the state to the prop
+          getSelectedItemClassName={getSelectedItemClassHandler}
+          showGridLines={showGrid}
           gridLinesClassName={CUSTOM_GRID_LINES_CLASSES}
         >
-          {layout.map((item) => {
-            return (
-              <Card className="flex items-center justify-center relative overflow-visible" key={item.id}>
-                {useCustomDragHandle && (
-                  <div
-                    className={DRAG_HANDLE_CLASS}
-                    style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: '4px',
-                      padding: '2px 6px',
-                      background: 'rgba(100, 100, 255, 0.7)',
-                      color: 'white',
-                      fontSize: '10px',
-                      borderRadius: '4px',
-                      cursor: 'move',
-                      zIndex: 10,
-                      border: '1px solid rgba(0,0,0,0.2)',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                    }}
-                    title="Drag"
-                  >
-                    DRAG
-                  </div>
-                )}
-                Item {item.id}
-              </Card>
-            )
-          })}
+          {layout.map(item => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              toggleItemLock={toggleItemLock}
+              toggleItemDisableCollision={toggleItemDisableCollision}
+              useCustomDragHandle={useCustomDragHandle}
+              dragHandleClassName={useCustomDragHandle ? DRAG_HANDLE_CLASS : undefined}
+            />
+          ))}
         </Grid>
       </div>
     </div>
