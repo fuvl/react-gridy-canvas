@@ -1,16 +1,24 @@
 .grid-layout {
   background: #fafbfc;
   position: relative;
-  border: 1px solid #ccc;
-  overflow: hidden;
+  overflow: visible;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
 }
 
+.grid-lines {
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+  background-size: 10px 10px;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-position: -0.5px -0.5px;
+}
+
 .grid-item {
-  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
   transition:
     transform 0.25s cubic-bezier(0.4, 2, 0.6, 1),
     width 0.18s cubic-bezier(0.4, 2, 0.6, 1),
@@ -20,6 +28,7 @@
   overflow: hidden;
   will-change: transform, width, height;
   box-sizing: border-box;
+  z-index: 1;
 }
 
 .grid-item > * {
@@ -39,14 +48,14 @@
   position: absolute;
   background: rgba(0, 0, 0, 0.12);
   border-radius: 6px;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
   transition:
-    left 0.05s ease-out,
-    top 0.05s ease-out,
-    width 0.05s ease-out,
-    height 0.05s ease-out,
-    border-color 0.05s ease-out;
+    left 0.02s ease-out,
+    top 0.02s ease-out,
+    width 0.02s ease-out,
+    height 0.02s ease-out,
+    border-color 0.02s ease-out;
   box-sizing: border-box;
 }
 

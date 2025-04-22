@@ -19,7 +19,7 @@ export function simulateQueueShift(
   layout: GridItem[],
   draggedId: string,
   dropPos: { x: number; y: number },
-  snapGridUnit: number,
+  snapGridUnit: number | [number, number],
   gap: number,
   canvasWidth: number,
   canvasHeight: number,
@@ -31,18 +31,38 @@ export function simulateQueueShift(
 ): ShiftSimulationResult {
   const dragged = layout.find((i) => i.id === draggedId)
   if (!dragged) return { previewLayout: layout, canDrop: false }
+  // allow separate snap units for X/Y
+  const [snapX, snapY] = Array.isArray(snapGridUnit) ? snapGridUnit : [snapGridUnit, snapGridUnit]
   const actualWidth = draggedSize?.width ?? dragged.width
   const actualHeight = draggedSize?.height ?? dragged.height
+  // compute pixel gap separately for X and Y axes
+  const pixelGapX = gap * snapX
+  const pixelGapY = gap * snapY
+  // snap drop position to grid separately on X and Y
   const snappedDropPos = {
-    x: snapToGrid(dropPos.x, snapGridUnit),
-    y: snapToGrid(dropPos.y, snapGridUnit),
+    x: snapToGrid(dropPos.x, snapX),
+    y: snapToGrid(dropPos.y, snapY),
   }
-
+  // preview of dragged item at dropped position
   const draggedPreview: GridItem = {
     id: draggedId,
     ...snappedDropPos,
     width: actualWidth,
     height: actualHeight,
+  }
+  const skipCollision = !!dragged.disableCollision
+  // If this item should ignore collisions, allow unrestricted drop
+  if (skipCollision) {
+    const previewLayout = layout.map((item) =>
+      item.id === draggedId ? { ...item, ...snappedDropPos, width: actualWidth, height: actualHeight } : item,
+    )
+    return {
+      previewLayout,
+      canDrop: true,
+      draggedPreview,
+      dropZone: draggedPreview,
+      showShadow: true,
+    }
   }
 
   let partialOverlap = false
@@ -50,8 +70,9 @@ export function simulateQueueShift(
   let maxOverlapRatio = 0
 
   for (const item of layout) {
-    if (item.id === draggedId) continue
-    if (doItemsOverlap(draggedPreview, item, gap)) {
+    if (item.id === draggedId || item.disableCollision) continue
+    // use separate X/Y pixel gaps
+    if (doItemsOverlap(draggedPreview, item, [pixelGapX, pixelGapY])) {
       anyOverlap = true
       const overlapRatio = getOverlapRatio(draggedPreview, item)
       if (overlapRatio > 0 && overlapRatio < SHIFT_TRIGGER_OVERLAP_RATIO) {
@@ -68,7 +89,6 @@ export function simulateQueueShift(
   if (!anyOverlap) {
     newDropZone = draggedPreview
   } else {
-    // Do not update dropZone if colliding, keep the previous one (or fallback to dragStart if none)
     newDropZone =
       dropZone ||
       (dragStart
@@ -183,14 +203,17 @@ export function simulateQueueShift(
   const queue: string[] = [draggedId]
   const processed = new Set<string>()
 
+  // helper: snap down to ensure shifts align exactly
+  const snapFloor = (value: number, grid: number) => Math.floor(value / grid) * grid
+
   while (queue.length > 0) {
     const currentId = queue.shift()
     if (!currentId) continue
     const currentItem = virtualMap.get(currentId)!
 
     for (const [otherId, other] of virtualMap.entries()) {
-      if (otherId === currentId) continue
-      if (doItemsOverlap(currentItem, other, gap)) {
+      if (otherId === currentId || other.disableCollision) continue
+      if (doItemsOverlap(currentItem, other, [pixelGapX, pixelGapY])) {
         if (currentId === draggedId) {
           const overlapRatio = getOverlapRatio(currentItem, other)
           if (overlapRatio < SHIFT_TRIGGER_OVERLAP_RATIO) {
@@ -234,17 +257,18 @@ export function simulateQueueShift(
           }
         }
         const shiftsToTry = [
-          { x: other.x, y: currentItem.y + currentItem.height + gap },
-          { x: currentItem.x + currentItem.width + gap, y: other.y },
-          { x: other.x, y: currentItem.y - other.height - gap },
-          { x: currentItem.x - other.width - gap, y: other.y },
+          { x: other.x, y: currentItem.y + currentItem.height + pixelGapY },
+          { x: currentItem.x + currentItem.width + pixelGapX, y: other.y },
+          { x: other.x, y: currentItem.y - other.height - pixelGapY },
+          { x: currentItem.x - other.width - pixelGapX, y: other.y },
         ]
         let shifted = false
         for (const shift of shiftsToTry) {
+          // snap shifted items to grid using separate X/Y units
           const newPos: GridItem = {
             ...other,
-            x: snapToGrid(shift.x, snapGridUnit),
-            y: snapToGrid(shift.y, snapGridUnit),
+            x: snapFloor(shift.x, snapX),
+            y: snapFloor(shift.y, snapY),
           }
           if (
             newPos.x < 0 ||
@@ -258,8 +282,8 @@ export function simulateQueueShift(
 
           let hasCollision = false
           for (const [checkId, checkItem] of virtualMap.entries()) {
-            if (checkId === otherId) continue
-            if (doItemsOverlap(newPos, checkItem, gap)) {
+            if (checkId === otherId || checkItem.disableCollision) continue
+            if (doItemsOverlap(newPos, checkItem, [pixelGapX, pixelGapY])) {
               hasCollision = true
               break
             }

@@ -1,13 +1,17 @@
 import type { ReactNode } from 'react'
 import type { HandleComponent } from 'react-rnd' // Import HandleComponent type
 
-// --- Basic Types ---
+// Basic Types
 export interface GridItem {
   id: string
   x: number
   y: number
   width: number
   height: number
+  /** If true, disables dragging and resizing on this item */
+  locked?: boolean
+  /** If true, this item will not shift on collision during others' drag/resize */
+  disableCollision?: boolean
 }
 
 export interface MousePosition {
@@ -25,17 +29,17 @@ export interface SelectionRectangle {
 // Component Props
 export interface GridProps {
   /** Layout items array */
-  layout: GridItem[] // Renamed from LayoutItem
+  layout: GridItem[]
   /** Callback when layout changes */
   onLayoutChange: (newLayout: GridItem[], oldLayout: GridItem[]) => void
   /** Width of the canvas */
   width: number
   /** Height of the canvas */
   height: number
-  /** Grid unit for snapping position (pixels) */
-  snapGridUnit?: number
-  /** Grid unit for snapping resize dimensions (pixels) */
-  resizeGridUnit?: number
+  /** Grid unit size for snapping position; can be single number or [x, y] */
+  gridUnitSize?: number | [number, number]
+  /** Grid unit size for snapping resize dimensions; single number or [width, height] */
+  resizeUnitSize?: number | [number, number]
   /** Gap between items during shift simulation (pixels) */
   gap?: number
   /** If true, items will shift others on collision */
@@ -61,20 +65,36 @@ export interface GridProps {
    * Always triggered when selection tool is enabled and a drag occurs.
    */
   onSelectionEnd?: (
-    selection: SelectionRectangle | null, // Allow null for the selection rectangle
+    selection: SelectionRectangle | null,
     mousePosition: MousePosition,
-    isValidSelection: boolean, // Indicates if selection met area/empty space criteria
-    selectedItemIds: string[], // IDs of items covered >= threshold (if selectOnlyEmptySpace is false)
+    isValidSelection: boolean,
+    selectedItemIds: string[],
     clearSelectionFn: () => void,
   ) => void
+  /** If true, displays grid lines based on snapGridUnit */
+  showGridLines?: boolean
+  /** Optional CSS class name for the grid lines container */
+  gridLinesClassName?: string
+  /** Custom class for the selection rectangle container */
+  selectionRectangleClassName?: string
+  /** Custom class for the invalid-selection rectangle state */
+  invalidSelectionClassName?: string
   /** Children must be React elements with unique `key` props matching layout item IDs */
   children: ReactNode
   /** Optional custom components for resize handles */
   resizeHandleComponent?: HandleComponent
   /** Optional CSS class name for the drag handle element within children */
   dragHandleClassName?: string
-  /** Optional function to provide dynamic class names for each item container (<Rnd>) */
-  getItemClassName?: (itemId: string) => string
+  /** Optional function to provide dynamic class names for each item container (e.g. selected state) */
+  getSelectedItemClassName?: (itemId: string) => string
+  /** Called when an item drag starts; returns item ID and start position */
+  onDragStart?: (itemId: string, position: { x: number; y: number }) => void
+  /** Called when an item drag ends; returns item ID and end position */
+  onDragEnd?: (itemId: string, position: { x: number; y: number }) => void
+  /** Called when an item resize starts; returns item ID and start rect */
+  onResizeStart?: (itemId: string, rect: { x: number; y: number; width: number; height: number }) => void
+  /** Called when an item resize ends; returns item ID and end rect */
+  onResizeEnd?: (itemId: string, rect: { x: number; y: number; width: number; height: number }) => void
 }
 
 // Internal Types

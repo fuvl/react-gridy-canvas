@@ -1,6 +1,6 @@
 {
   "name": "react-gridy-canvas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A draggable and resizable grid/canvas layout component for React with snapping, collision handling, and selection.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -21,6 +21,7 @@
     "react-dom": ">=17.0.0"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "react-rnd": "^10.4.10"
   },
   "devDependencies": {

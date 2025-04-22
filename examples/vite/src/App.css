@@ -4,8 +4,3 @@
   padding: 2rem;
   text-align: center;
 }
-
-.app-selected-item {
-  outline: 3px solid #ef4444; /* red-500 */
-  outline-offset: -1px;
-}

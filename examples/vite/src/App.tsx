@@ -1,22 +1,25 @@
 import { useState, useRef, useCallback, CSSProperties } from 'react'
 import { Button } from './components/ui/button'
-import { Card } from './components/ui/card'
 import Grid, { GridItem, SelectionRectangle, MousePosition } from '../../../src/index'
-import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover'
+import { Switch } from './components/ui/switch'
+import { Popover, PopoverTrigger, PopoverContent } from './components/ui/popover'
+import { SquareDashedMousePointer } from 'lucide-react'
+import ItemCard from './components/ItemCard'
+import './App.css'
 
 // Initial data for layout
 const initialLayoutData: GridItem[] = [
-  { id: '1', x: 0, y: 0, width: 100, height: 100 },
-  { id: '2', x: 120, y: 0, width: 100, height: 100 },
-  { id: '3', x: 240, y: 0, width: 100, height: 100 },
+  { id: '1', x: 0, y: 0, width: 100, height: 80 },
+  { id: '2', x: 120, y: 0, width: 100, height: 80 },
+  { id: '3', x: 240, y: 0, width: 100, height: 80 },
 ]
 
 // Define the class name for the drag handle
 const DRAG_HANDLE_CLASS = 'drag-handle'
 
-// Define Tailwind classes for selected items
-const SELECTED_ITEM_CLASSES =
-  'outline outline-3 outline-red-500 outline-offset-[-1px] shadow-[0_0_0_3px_rgba(239,68,68,0.3)]'
+const SELECTED_ITEM_CLASSES = 'outline outline-2 outline-red-500 shadow-red-500/30'
+
+const CUSTOM_GRID_LINES_CLASSES = 'bg-[background-image:linear-gradient(to_right,rgba(209,213,219,0.5)_1px,transparent_1px),linear-gradient(to_bottom,rgba(209,213,219,0.5)_1px,transparent_1px)] bg-[background-size:10px_10px]'
 
 function App() {
   // Layout State (Lifted)
@@ -30,6 +33,7 @@ function App() {
   const [enableSelectionTool, setEnableSelectionTool] = useState(false)
   const [useCustomDragHandle, setUseCustomDragHandle] = useState(false)
   const [selectOnlyEmptySpace, setSelectOnlyEmptySpace] = useState(true)
+  const [showGrid, setShowGrid] = useState(false) // State for grid lines
 
   // Popover/Selection State
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
@@ -94,7 +98,8 @@ function App() {
     setLayout((prev) => prev.filter((item: GridItem) => !selectedItems.includes(item.id)))
     setIsPopoverOpen(false)
     clearCurrentSelection()
-  }, [selectedItems, clearCurrentSelection])
+    setEnableSelectionTool(false) 
+  }, [selectedItems, clearCurrentSelection, setEnableSelectionTool])
 
   // Add a new card based on the stored selection rectangle
   const addCardHandler = useCallback(() => {
@@ -112,7 +117,8 @@ function App() {
     setLayout((prevLayout) => [...prevLayout, newItem])
     setIsPopoverOpen(false)
     clearCurrentSelection()
-  }, [lastValidSelectionRect, clearCurrentSelection])
+    setEnableSelectionTool(false) // turn off selection tool after creation
+  }, [lastValidSelectionRect, clearCurrentSelection, setEnableSelectionTool])
 
   // Handle Popover close: clear selection state if closed externally
   const handlePopoverOpenChange = useCallback((open: boolean) => {
@@ -128,55 +134,76 @@ function App() {
   }, [])
 
   // Function to provide classes to CanvasLayout items
-  const getItemClassNameHandler = useCallback(
+  const getSelectedItemClassHandler = useCallback(
     (itemId: string): string => {
+      // Use the renamed constant for selected item classes
       return selectedItems.includes(itemId) ? SELECTED_ITEM_CLASSES : ''
     },
     [selectedItems],
   )
 
+  // Toggle lock flag for an item
+  const toggleItemLock = useCallback((id: string) => {
+    setLayout((prev) => prev.map(item => item.id === id ? { ...item, locked: !item.locked } : item));
+  }, []);
+
+  // Toggle disableCollision flag for an item
+  const toggleItemDisableCollision = useCallback((id: string) => {
+    setLayout(prev => prev.map(item => item.id === id ? { ...item, disableCollision: !item.disableCollision } : item));
+  }, []);
+
   return (
-    <div className="p-8 space-y-8 relative">
-      <h1 className="text-3xl font-bold mb-4">Canvas Layout Demo</h1>
-      <div className="flex gap-4 flex-wrap">
-        <Button variant="default">Default</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant={shiftOnCollision ? 'default' : 'outline'} onClick={() => setShiftOnCollision((v) => !v)}>
-          {shiftOnCollision ? 'Shifting On' : 'Shifting Off'}
-        </Button>
-        <Button variant={showOutline ? 'default' : 'outline'} onClick={() => setShowOutline((v) => !v)}>
-          {showOutline ? 'Outline On' : 'Outline Off'}
-        </Button>
-        <Button variant={showDropZoneShadow ? 'default' : 'outline'} onClick={() => setShowDropZoneShadow((v) => !v)}>
-          {showDropZoneShadow ? 'Drop Zone Shadow On' : 'Drop Zone Shadow Off'}
-        </Button>
-        <Button
-          variant={enableSelectionTool ? 'default' : 'outline'}
-          onClick={() => {
-            const turningOff = enableSelectionTool
-            setEnableSelectionTool((v) => !v)
-            if (turningOff) {
-              setIsPopoverOpen(false)
-              clearCurrentSelection()
-            }
-          }}
-        >
-          {enableSelectionTool ? 'Selection Tool On' : 'Selection Tool Off'}
-        </Button>
-        <Button variant={useCustomDragHandle ? 'default' : 'outline'} onClick={() => setUseCustomDragHandle((v) => !v)}>
-          {useCustomDragHandle ? 'Custom Drag Handle On' : 'Custom Drag Handle Off'}
-        </Button>
-        <Button
-          variant={selectOnlyEmptySpace ? 'default' : 'outline'}
-          onClick={() => setSelectOnlyEmptySpace((v) => !v)}
-          disabled={!enableSelectionTool}
-        >
-          {selectOnlyEmptySpace ? 'Select Empty Space Only' : 'Select Anywhere'}
-        </Button>
+    <div className="p-8 space-y-8 relative flex flex-col items-center">
+      <h1 className="text-3xl font-bold mb-4">Gridy Canvas Demo</h1>
+      <div className="w-[800px] mx-auto grid grid-rows-2 grid-flow-col gap-x-8 gap-y-4">
+        <div className="flex justify-between items-center w-full">
+          <label>Shift on Collision</label>
+          <Switch checked={shiftOnCollision} onCheckedChange={setShiftOnCollision} />
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <label>Outline</label>
+          <Switch checked={showOutline} onCheckedChange={setShowOutline} />
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <label>Drop Zone Shadow</label>
+          <Switch checked={showDropZoneShadow} onCheckedChange={setShowDropZoneShadow} />
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <label>Custom Drag Handle</label>
+          <Switch checked={useCustomDragHandle} onCheckedChange={setUseCustomDragHandle} />
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <label>Selection Tool</label>
+          <Button
+            variant={enableSelectionTool ? 'default' : 'outline'}
+            onClick={() => {
+              const off = enableSelectionTool
+              setEnableSelectionTool((v) => !v)
+              if (off) {
+                setIsPopoverOpen(false)
+                clearCurrentSelection()
+              }
+            }}
+          >
+            <SquareDashedMousePointer className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <label>Select Only Empty</label>
+          <Switch
+            checked={selectOnlyEmptySpace}
+            onCheckedChange={setSelectOnlyEmptySpace}
+            disabled={!enableSelectionTool}
+          />
+        </div>
+        <div className="flex justify-between items-center w-full">
+          <label>Grid Lines</label>
+          <Switch checked={showGrid} onCheckedChange={setShowGrid} />
+        </div>
       </div>
       <Popover open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
         <PopoverTrigger style={popoverPositionStyle} />
-        <PopoverContent onOpenAutoFocus={(e: Event) => e.preventDefault()} className="w-auto p-0">
+        <PopoverContent onOpenAutoFocus={(e: Event) => e.preventDefault()} className="w-auto p-0 z-[200]">
           {selectedItems.length > 0 ? (
             <Button
               variant="ghost"
@@ -198,17 +225,17 @@ function App() {
         </PopoverContent>
       </Popover>
 
-      <div className="mt-8">
+      <div className="mt-8 flex justify-center">
         <Grid
           layout={layout}
           onLayoutChange={handleLayoutChange}
           width={800}
           height={600}
           isLocked={false}
-          gap={10}
+          gap={1}
           shiftOnCollision={shiftOnCollision}
-          snapGridUnit={10}
-          resizeGridUnit={10}
+          gridUnitSize={10}
+          resizeUnitSize={10}
           showOutline={showOutline}
           enableSelectionTool={enableSelectionTool}
           onSelectionEnd={handleSelectionEnd}
@@ -216,37 +243,20 @@ function App() {
           showDropZoneShadow={showDropZoneShadow}
           minSelectionArea={3000}
           dragHandleClassName={useCustomDragHandle ? DRAG_HANDLE_CLASS : undefined}
-          getItemClassName={getItemClassNameHandler}
+          getSelectedItemClassName={getSelectedItemClassHandler}
+          showGridLines={showGrid}
+          gridLinesClassName={CUSTOM_GRID_LINES_CLASSES}
         >
-          {layout.map((item) => {
-            return (
-              <Card className="flex items-center justify-center relative overflow-visible" key={item.id}>
-                {useCustomDragHandle && (
-                  <div
-                    className={DRAG_HANDLE_CLASS}
-                    style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: '4px',
-                      padding: '2px 6px',
-                      background: 'rgba(100, 100, 255, 0.7)',
-                      color: 'white',
-                      fontSize: '10px',
-                      borderRadius: '4px',
-                      cursor: 'move',
-                      zIndex: 10,
-                      border: '1px solid rgba(0,0,0,0.2)',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                    }}
-                    title="Drag"
-                  >
-                    DRAG
-                  </div>
-                )}
-                Item {item.id}
-              </Card>
-            )
-          })}
+          {layout.map(item => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              toggleItemLock={toggleItemLock}
+              toggleItemDisableCollision={toggleItemDisableCollision}
+              useCustomDragHandle={useCustomDragHandle}
+              dragHandleClassName={useCustomDragHandle ? DRAG_HANDLE_CLASS : undefined}
+            />
+          ))}
         </Grid>
       </div>
     </div>

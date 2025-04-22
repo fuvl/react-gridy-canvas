@@ -12,7 +12,7 @@ interface UseSelectionHandlerProps {
   layout: GridItem[]
   width: number
   height: number
-  snapGridUnit: number
+  snapGridUnit: number | [number, number]
   enableSelectionTool: boolean
   selectOnlyEmptySpace: boolean
   minSelectionArea: number
@@ -54,6 +54,7 @@ export const useSelectionHandler = ({
   dragHandleClassName,
   onSelectionEnd,
 }: UseSelectionHandlerProps): UseSelectionHandlerReturn => {
+  const [snapX, snapY] = Array.isArray(snapGridUnit) ? snapGridUnit : [snapGridUnit, snapGridUnit]
   // State
   const [isSelecting, setIsSelecting] = useState<boolean>(false)
   const [selectionStart, setSelectionStart] = useState<{
@@ -117,10 +118,10 @@ export const useSelectionHandler = ({
       const startX = selectionStart.x
       const startY = selectionStart.y
 
-      const snappedStartX = snapToGrid(startX, snapGridUnit)
-      const snappedStartY = snapToGrid(startY, snapGridUnit)
-      const snappedCurrentX = snapToGrid(currentX, snapGridUnit)
-      const snappedCurrentY = snapToGrid(currentY, snapGridUnit)
+      const snappedStartX = snapToGrid(startX, snapX)
+      const snappedStartY = snapToGrid(startY, snapY)
+      const snappedCurrentX = snapToGrid(currentX, snapX)
+      const snappedCurrentY = snapToGrid(currentY, snapY)
 
       const finalSnappedX = Math.min(snappedStartX, snappedCurrentX)
       const finalSnappedY = Math.min(snappedStartY, snappedCurrentY)
@@ -130,8 +131,8 @@ export const useSelectionHandler = ({
       const calculatedSnappedWidth = finalSnappedEndX - finalSnappedX
       const calculatedSnappedHeight = finalSnappedEndY - finalSnappedY
 
-      const snappedWidth = Math.max(snapGridUnit, calculatedSnappedWidth)
-      const snappedHeight = Math.max(snapGridUnit, calculatedSnappedHeight)
+      const snappedWidth = Math.max(snapX, calculatedSnappedWidth)
+      const snappedHeight = Math.max(snapY, calculatedSnappedHeight)
 
       const currentSelection: SelectionRectangle = {
         x: finalSnappedX,
@@ -161,7 +162,8 @@ export const useSelectionHandler = ({
       canvasRef,
       width,
       height,
-      snapGridUnit,
+      snapX,
+      snapY,
       minSelectionArea,
       selectOnlyEmptySpace,
       layout,
@@ -186,10 +188,10 @@ export const useSelectionHandler = ({
       const startX = selectionStart.x
       const startY = selectionStart.y
 
-      const snappedStartX = snapToGrid(startX, snapGridUnit)
-      const snappedStartY = snapToGrid(startY, snapGridUnit)
-      const snappedCurrentX = snapToGrid(finalCurrentX, snapGridUnit)
-      const snappedCurrentY = snapToGrid(finalCurrentY, snapGridUnit)
+      const snappedStartX = snapToGrid(startX, snapX)
+      const snappedStartY = snapToGrid(startY, snapY)
+      const snappedCurrentX = snapToGrid(finalCurrentX, snapX)
+      const snappedCurrentY = snapToGrid(finalCurrentY, snapY)
 
       const finalSnappedX = Math.min(snappedStartX, snappedCurrentX)
       const finalSnappedY = Math.min(snappedStartY, snappedCurrentY)
@@ -199,8 +201,8 @@ export const useSelectionHandler = ({
       const calculatedSnappedWidth = finalSnappedEndX - finalSnappedX
       const calculatedSnappedHeight = finalSnappedEndY - finalSnappedY
 
-      const finalSnappedWidth = Math.max(snapGridUnit, calculatedSnappedWidth)
-      const finalSnappedHeight = Math.max(snapGridUnit, calculatedSnappedHeight)
+      const finalSnappedWidth = Math.max(snapX, calculatedSnappedWidth)
+      const finalSnappedHeight = Math.max(snapY, calculatedSnappedHeight)
 
       const finalCalculatedRect: SelectionRectangle = {
         x: finalSnappedX,
@@ -264,7 +266,8 @@ export const useSelectionHandler = ({
       canvasRef,
       width,
       height,
-      snapGridUnit,
+      snapX,
+      snapY,
       minSelectionArea,
       selectOnlyEmptySpace,
       layout,
@@ -324,13 +327,13 @@ export const useSelectionHandler = ({
 
       setIsSelecting(true)
       setSelectionStart({ x: startX, y: startY })
-      const initialSnappedX = snapToGrid(startX, snapGridUnit)
-      const initialSnappedY = snapToGrid(startY, snapGridUnit)
+      const initialSnappedX = snapToGrid(startX, snapX)
+      const initialSnappedY = snapToGrid(startY, snapY)
       setSelectionRect({
         x: initialSnappedX,
         y: initialSnappedY,
-        width: snapGridUnit,
-        height: snapGridUnit,
+        width: snapX,
+        height: snapY,
       })
       setIsSelectionValidForStyling(false)
       listenersAttachedRef.current = false
@@ -340,7 +343,8 @@ export const useSelectionHandler = ({
       isLocked,
       clearSelectionState,
       dragHandleClassName,
-      snapGridUnit,
+      snapX,
+      snapY,
       width,
       height,
       canvasRef,
