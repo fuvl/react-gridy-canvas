@@ -16,6 +16,7 @@ A flexible grid/canvas layout component for React, built with TypeScript. It uti
 - **Custom Handles:** Supports custom components for resize handles and specific drag handle elements.
 - **Dynamic Styling:** Allows applying custom classes to the canvas, drop zone shadow, and individual items.
 - **Zoom / Scale Support:** Optional `scale` prop lets you zoom the entire grid while preserving correct drag, resize and selection behaviors.
+- **Custom Transform Origin:** Optional control over the pivot point when zooming the grid (via `transformOrigin`).
 
 ## Installation
 
@@ -68,7 +69,10 @@ function MyComponent() {
     enableSelectionTool: true,
     gridUnitSize: 10,
     resizeUnitSize: 10,
+    /** Optional canvas zoom factor */
     scale: 1,
+    /** Optional zoom pivot (transform-origin) */
+    transformOrigin: '0px 0px',
     onDragStart: (id, pos) => console.log('drag started', id, pos),
     onDragEnd: (id, pos) => console.log('drag ended', id, pos),
     onResizeStart: (id, rect) => console.log('resize started', id, rect),
@@ -129,6 +133,7 @@ export default MyComponent
 | `onResizeStart`            | `(itemId: string, rect: { x: number; y: number; width: number; height: number }) => void`                                                                          | `undefined`                   | Callback when an item resize begins; provides ID and starting rectangle (snapped).                                                             |
 | `onResizeEnd`              | `(itemId: string, rect: { x: number; y: number; width: number; height: number }) => void`                                                                          | `undefined`                   | Callback when an item resize ends; provides ID and final rectangle (snapped).                                                                  |
 | `scale`                    | `number`                                                                                                                                                           | `1`                           | Optional CSS scale factor for the grid container; zooms the canvas while maintaining accurate interactions                                     |
+| `transformOrigin`          | `string`                                                                                                                                                           | `0px 0px`                     | Optional CSS `transform-origin` for the grid container; sets pivot point when using zoom (`scale`)                                             |
 
 ## Callbacks
 
