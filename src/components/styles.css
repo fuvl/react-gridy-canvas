@@ -1,7 +1,7 @@
 .grid-layout {
   background: #fafbfc;
   position: relative;
-  overflow: visible;
+  overflow: visible !important;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -20,15 +20,25 @@
 
 .grid-item {
   transition:
-    transform 0.25s cubic-bezier(0.4, 2, 0.6, 1),
-    width 0.18s cubic-bezier(0.4, 2, 0.6, 1),
-    height 0.18s cubic-bezier(0.4, 2, 0.6, 1),
-    box-shadow 0.2s,
-    border 0.2s;
-  overflow: hidden;
+    transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1),
+    width 0.15s cubic-bezier(0.25, 0.1, 0.25, 1),
+    height 0.15s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.15s ease-out,
+    border 0.15s ease-out;
+  overflow: visible;
   will-change: transform, width, height;
   box-sizing: border-box;
   z-index: 1;
+  transform-origin: center center;
+}
+
+.grid-item--no-animations {
+  transition: none !important;
+}
+
+.grid-item--dragging,
+.grid-item--resizing {
+  transition: none !important;
 }
 
 .grid-item > * {
@@ -129,4 +139,120 @@
   bottom: -5px;
   right: -5px;
   cursor: nwse-resize;
+}
+
+/* Hide react-rnd resize handle container when resizing is disabled */
+.grid-item > div:last-child:not([style*="transform"]) {
+  display: none !important;
+}
+
+/* Transformer Styles */
+.grid-transformer {
+  position: absolute;
+  pointer-events: none;
+  border: 2px solid #007AFF;
+  border-radius: 2px;
+  z-index: 1000;
+}
+
+.grid-transformer-anchor {
+  position: absolute;
+  pointer-events: auto;
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border: 2px solid #2563eb;
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  opacity: 1;
+}
+
+.grid-transformer-anchor--tl {
+  cursor: nw-resize;
+}
+
+.grid-transformer-anchor--tr {
+  cursor: ne-resize;
+}
+
+.grid-transformer-anchor--bl {
+  cursor: sw-resize;
+}
+
+.grid-transformer-anchor--br {
+  cursor: se-resize;
+}
+
+.grid-transformer-anchor--t {
+  cursor: n-resize;
+}
+
+.grid-transformer-anchor--b {
+  cursor: s-resize;
+}
+
+.grid-transformer-anchor--l {
+  cursor: w-resize;
+}
+
+.grid-transformer-anchor--r {
+  cursor: e-resize;
+}
+
+.grid-transformer-rotation-handle {
+  position: absolute;
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: grab;
+  z-index: 1001;
+}
+
+.grid-transformer-rotation-handle:active {
+  cursor: grabbing;
+}
+
+.grid-transformer-rotation-line {
+  position: absolute;
+  background-color: #3b82f6;
+  width: 1px;
+  z-index: 1000;
+}
+
+/* Snap Lines Styles */
+.grid-snap-lines {
+  pointer-events: none;
+  z-index: 100;
+}
+
+.grid-snap-line--grid {
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 150ms ease-out;
+}
+
+.grid-snap-line--item {
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 150ms ease-out;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.grid-snap-distance {
+  position: absolute;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 101;
 }
