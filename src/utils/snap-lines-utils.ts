@@ -6,15 +6,15 @@ import { GridItem, SnapLine, SnapBehaviorConfig } from '../types'
 export function calculateGridSnapLines(
   width: number,
   height: number,
-  gridUnitSize: number | [number, number],
+  _gridUnitSize: number | [number, number],
   snapBehavior: SnapBehaviorConfig = { gridCenter: false },
   canvasX = 0,
   canvasY = 0
 ): SnapLine[] {
   const snapLines: SnapLine[] = []
   
-  // Handle both single number and array format
-  const [gridX, gridY] = Array.isArray(gridUnitSize) ? gridUnitSize : [gridUnitSize, gridUnitSize]
+  // Handle both single number and array format (for future grid line implementation)
+  // const [gridX, gridY] = Array.isArray(gridUnitSize) ? gridUnitSize : [gridUnitSize, gridUnitSize]
   
   let lineId = 0
   
@@ -52,8 +52,7 @@ export function calculateGridSnapLines(
  */
 export function calculateDistanceIndicators(
   items: GridItem[],
-  draggingItem: GridItem,
-  snapThreshold = 5
+  draggingItem: GridItem
 ): SnapLine[] {
   const snapLines: SnapLine[] = []
   let lineId = 0
@@ -254,8 +253,7 @@ export function calculateItemSnapLines(
  */
 export function findRelevantSnapLines(
   snapLines: SnapLine[],
-  draggingItem: GridItem,
-  snapThreshold = 5
+  draggingItem: GridItem
 ): SnapLine[] {
   const relevant: SnapLine[] = []
   
@@ -308,9 +306,7 @@ export function findRelevantSnapLines(
  */
 export function extendSnapLinesForItem(
   snapLines: SnapLine[],
-  draggingItem: GridItem,
-  canvasWidth: number,
-  canvasHeight: number
+  draggingItem: GridItem
 ): SnapLine[] {
   return snapLines.map(line => {
     if (line.type === 'vertical') {
@@ -583,13 +579,15 @@ export function applySnapToPosition(
   
   // Apply snapping
   if (closestVerticalSnap) {
-    x = closestVerticalSnap.position
-    snappedLines.push(closestVerticalSnap.line)
+    const { position, line } = closestVerticalSnap
+    x = position
+    snappedLines.push(line)
   }
   
   if (closestHorizontalSnap) {
-    y = closestHorizontalSnap.position
-    snappedLines.push(closestHorizontalSnap.line)
+    const { position, line } = closestHorizontalSnap
+    y = position
+    snappedLines.push(line)
   }
   
   return { x, y, snappedLines }
