@@ -238,11 +238,11 @@ const Grid: React.FC<GridProps> = ({
         
         // Calculate distance indicators for spacing between aligned items (only when moving slowly)
         const draggingItem = { ...startPos, x: finalPosition.x, y: finalPosition.y, ...currentItemSize }
-        const distanceIndicators = calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), draggingItem, snapThreshold)
+        const distanceIndicators = calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), draggingItem)
         
         // Find relevant snap lines based on alignment (not proximity)
-        const relevantSnapLines = findRelevantSnapLines(allSnapLines, draggingItem, snapThreshold)
-        const extendedSnapLines = extendSnapLinesForItem(relevantSnapLines, draggingItem, width, height)
+        const relevantSnapLines = findRelevantSnapLines(allSnapLines, draggingItem)
+        const extendedSnapLines = extendSnapLinesForItem(relevantSnapLines, draggingItem)
         
         // Combine with distance indicators for display
         const allDisplayLines = [...extendedSnapLines, ...distanceIndicators]
@@ -671,11 +671,11 @@ const Grid: React.FC<GridProps> = ({
           
           // Calculate distance indicators during transformer resize
           const resizingItem = { id: itemId, x: snappedRect.x, y: snappedRect.y, ...currentItemSize }
-          const distanceIndicators = calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), resizingItem, snapThreshold)
+          const distanceIndicators = calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), resizingItem)
           
           // Find relevant snap lines for display
-          const relevantSnapLines = findRelevantSnapLines(allSnapLines, resizingItem, snapThreshold)
-          const extendedSnapLines = extendSnapLinesForItem(relevantSnapLines, resizingItem, width, height)
+          const relevantSnapLines = findRelevantSnapLines(allSnapLines, resizingItem)
+          const extendedSnapLines = extendSnapLinesForItem(relevantSnapLines, resizingItem)
           
           // Combine with distance indicators for display
           const allDisplayLines = [...extendedSnapLines, ...distanceIndicators]
