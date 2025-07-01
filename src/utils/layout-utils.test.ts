@@ -81,9 +81,15 @@ describe('layout-utils', () => {
       expect(snapToGrid(12.7, 1)).toBe(13)
     })
 
-    it('should handle grid size less than 1 (treat as 1)', () => {
-      expect(snapToGrid(12.3, 0.5)).toBe(12)
-      expect(snapToGrid(12.7, 0)).toBe(13)
+    it('should return value as-is when grid size is 0 or negative (free movement)', () => {
+      expect(snapToGrid(12.3, 0)).toBe(12.3)
+      expect(snapToGrid(12.7, 0)).toBe(12.7)
+      expect(snapToGrid(15.456, -1)).toBe(15.456)
+    })
+
+    it('should snap when grid size is between 0 and 1', () => {
+      expect(snapToGrid(12.3, 0.5)).toBe(12.5)
+      expect(snapToGrid(12.7, 0.5)).toBe(12.5)
     })
   })
 })

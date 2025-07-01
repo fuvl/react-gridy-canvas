@@ -1,6 +1,91 @@
 import type { ReactNode } from 'react'
 import type { HandleComponent } from 'react-rnd' // Import HandleComponent type
 
+// Transformer Customization Types
+export interface TransformerStyle {
+  /** Custom class names */
+  className?: string
+  anchorClassName?: string
+  cornerAnchorClassName?: string
+  edgeAnchorClassName?: string
+  rotationHandleClassName?: string
+  rotationLineClassName?: string
+  rotationDisplayClassName?: string
+  
+  /** Border styles */
+  borderColor?: string
+  borderWidth?: number
+  borderStyle?: string
+  borderRadius?: number
+  
+  /** Anchor styles */
+  anchorSize?: number
+  anchorColor?: string
+  anchorBorderColor?: string
+  anchorBorderWidth?: number
+  anchorBorderRadius?: number
+  
+  /** Rotation handle styles */
+  rotationHandleSize?: number
+  rotationHandleColor?: string
+  rotationHandleDistance?: number
+  
+  /** Rotation line styles */
+  rotationLineColor?: string
+  rotationLineWidth?: number
+  
+  /** Rotation display styles */
+  rotationDisplayBackground?: string
+  rotationDisplayColor?: string
+  
+  /** Visibility options */
+  hideAnchors?: string[] // Array of anchor positions to hide: 'tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'
+  hideRotationHandle?: boolean
+}
+
+// Snap Lines Types
+export type SnapType = 'grid-center' | 'item-edge' | 'item-center' | 'item-distance'
+
+export interface SnapLine {
+  id: string
+  type: 'vertical' | 'horizontal'
+  position: number // x for vertical, y for horizontal
+  start: number // start position along the line
+  end: number // end position along the line
+  snapType: SnapType
+  itemId?: string // source item ID for item-based snap lines
+  distance?: number // distance value for distance-based snap lines
+  referenceItems?: string[] // IDs of items used to calculate this distance
+}
+
+export interface SnapBehaviorConfig {
+  gridCenter?: boolean // Snap to grid center points
+  itemEdges?: boolean // Snap to other items' edges
+  itemCenters?: boolean // Snap to other items' centers
+  itemDistance?: boolean // Snap to maintain distances between items
+}
+
+export interface SnapLinesStyle {
+  /** Custom class names */
+  className?: string
+  gridSnapLineClassName?: string
+  itemSnapLineClassName?: string
+  
+  /** Line styles */
+  gridSnapLineColor?: string
+  itemSnapLineColor?: string
+  snapLineWidth?: number
+  snapLineStyle?: 'solid' | 'dashed' | 'dotted'
+  
+  /** Animation styles */
+  snapLineOpacity?: number
+  snapLineAnimationDuration?: number
+  showSnapDistance?: boolean
+  snapDistanceClassName?: string
+  snapDistanceColor?: string
+  snapDistanceBackground?: string
+}
+
 // Basic Types
 export interface GridItem {
   id: string
@@ -8,10 +93,18 @@ export interface GridItem {
   y: number
   width: number
   height: number
+  /** Rotation angle in degrees (default: 0) */
+  rotation?: number
   /** If true, disables dragging and resizing on this item */
   locked?: boolean
   /** If true, this item will not shift on collision during others' drag/resize */
   disableCollision?: boolean
+  /** If true, shows transformer with resize anchors and rotation handles when this item is active */
+  showTransformer?: boolean
+  /** If true, disables rotation for this item (default: false) */
+  disableRotation?: boolean
+  /** Z-index for layer ordering (higher values appear on top) */
+  zIndex?: number
 }
 
 export interface MousePosition {
@@ -48,10 +141,14 @@ export interface GridProps {
   gap?: number
   /** If true, items will shift others on collision */
   shiftOnCollision?: boolean
+  /** If true, collision detection is disabled globally for all items */
+  disableCollision?: boolean
   /** If true, dragging and resizing are disabled */
   isLocked?: boolean
   /** If true, show dashed outline around items and drop zone */
   showOutline?: boolean
+  /** If true, show transformer with resize anchors and rotation handles for active items */
+  showTransformer?: boolean
   /** Optional CSS class name for the main canvas div */
   className?: string
   /** If true, show a shadow where the item will drop */
@@ -99,6 +196,22 @@ export interface GridProps {
   onResizeStart?: (itemId: string, rect: { x: number; y: number; width: number; height: number }) => void
   /** Called when an item resize ends; returns item ID and end rect */
   onResizeEnd?: (itemId: string, rect: { x: number; y: number; width: number; height: number }) => void
+  /** Called during rotation preview; returns item ID and current rotation angle (null when preview ends) */
+  onRotationPreview?: (itemId: string, angle: number | null) => void
+  /** Custom styles for the transformer component */
+  transformerStyle?: TransformerStyle
+  /** If true, disables animations during drag/resize for smoother interaction */
+  disableAnimations?: boolean
+  /** If true, shows snap lines during drag/resize operations */
+  showSnapLines?: boolean
+  /** Snap lines configuration and styling */
+  snapLinesStyle?: SnapLinesStyle
+  /** Snap threshold distance in pixels for item-to-item snapping */
+  snapThreshold?: number
+  /** If true, enables snapping to other items' edges and centers */
+  enableItemSnapping?: boolean
+  /** Configuration for different snap behaviors */
+  snapBehavior?: SnapBehaviorConfig
 }
 
 // Internal Types
