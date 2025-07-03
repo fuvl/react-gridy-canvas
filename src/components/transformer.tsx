@@ -284,7 +284,7 @@ export const Transformer: React.FC<TransformerProps> = ({
         height: item.height,
         transform: (() => {
           // Use preview rotation if available, otherwise use item rotation
-          const currentRotation = previewRotation !== null ? previewRotation : item.rotation
+          const currentRotation = previewRotation ?? item.rotation
           return currentRotation ? `rotate(${currentRotation}deg)` : undefined
         })(),
         transformOrigin: 'center center',
@@ -391,7 +391,7 @@ export const Transformer: React.FC<TransformerProps> = ({
 
           {/* Rotation angle display */}
           {(() => {
-            const currentAngle = previewRotation !== null ? previewRotation : item.rotation || 0
+            const currentAngle = previewRotation ?? item.rotation ?? 0
             return currentAngle !== 0
           })() && (
             <div
@@ -412,7 +412,7 @@ export const Transformer: React.FC<TransformerProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {Math.round(previewRotation !== null ? previewRotation : item.rotation || 0)}°
+              {Math.round(previewRotation ?? item.rotation ?? 0)}°
             </div>
           )}
 
