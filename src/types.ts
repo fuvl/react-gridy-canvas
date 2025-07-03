@@ -77,13 +77,15 @@ export interface SnapLinesStyle {
   snapLineWidth?: number
   snapLineStyle?: 'solid' | 'dashed' | 'dotted'
   
-  /** Animation styles */
+  /** Opacity and animation */
   snapLineOpacity?: number
   snapLineAnimationDuration?: number
-  showSnapDistance?: boolean
-  snapDistanceClassName?: string
-  snapDistanceColor?: string
-  snapDistanceBackground?: string
+  
+  /** Distance label/badge styles */
+  showDistanceLabel?: boolean
+  distanceLabelClassName?: string
+  distanceLabelColor?: string
+  distanceLabelBackground?: string
 }
 
 // Basic Types
@@ -176,6 +178,12 @@ export interface GridProps {
   showGridLines?: boolean
   /** Optional CSS class name for the grid lines container */
   gridLinesClassName?: string
+  /** Grid line color (default: rgba(209, 213, 219, 0.5)) */
+  gridLineColor?: string
+  /** Grid line width in pixels (default: 1) */
+  gridLineWidth?: number
+  /** Grid line style (default: solid) */
+  gridLineStyle?: 'solid' | 'dashed' | 'dotted'
   /** Custom class for the selection rectangle container */
   selectionRectangleClassName?: string
   /** Custom class for the invalid-selection rectangle state */
@@ -212,6 +220,8 @@ export interface GridProps {
   enableItemSnapping?: boolean
   /** Configuration for different snap behaviors */
   snapBehavior?: SnapBehaviorConfig
+  /** If true, disables arrow key movement for selected items (default: false) */
+  disableKeyboardMovement?: boolean
 }
 
 // Internal Types

@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode } from 'react'
+import React, { useState, useCallback, useRef, Children, isValidElement, ReactNode, useEffect } from 'react'
 import clsx from 'clsx'
 import { Rnd, type DraggableData, type RndResizeCallback, type RndResizeStartCallback } from 'react-rnd'
 import './styles.css'
 import { GridItem, GridProps } from '../types'
-import { snapToGrid } from '../utils/layout-utils'
+import { snapToGrid, doItemsOverlap } from '../utils/layout-utils'
 import { simulateQueueShift } from '../utils/shift-simulator'
 import { useSelectionHandler } from '../utils/selection-utils'
 import { sortByZIndex } from '../utils/z-index-utils'
@@ -41,6 +41,9 @@ const Grid: React.FC<GridProps> = ({
   children,
   showGridLines = false,
   gridLinesClassName = '',
+  gridLineColor = 'rgba(209, 213, 219, 0.5)',
+  gridLineWidth = 1,
+  gridLineStyle = 'solid',
   selectionRectangleClassName,
   invalidSelectionClassName,
   onDragStart: onDragStartProp,
@@ -55,6 +58,7 @@ const Grid: React.FC<GridProps> = ({
   snapThreshold = 5,
   enableItemSnapping = true,
   snapBehavior = { gridCenter: false, itemEdges: true, itemCenters: true, itemDistance: false },
+  disableKeyboardMovement = false,
 }) => {
   // derive numeric grid units for x/y
   const [gridUnitX, gridUnitY] = Array.isArray(gridUnitSize) ? gridUnitSize : [gridUnitSize, gridUnitSize]
@@ -238,7 +242,9 @@ const Grid: React.FC<GridProps> = ({
         
         // Calculate distance indicators for spacing between aligned items (only when moving slowly)
         const draggingItem = { ...startPos, x: finalPosition.x, y: finalPosition.y, ...currentItemSize }
-        const distanceIndicators = calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), draggingItem)
+        const distanceIndicators = snapBehavior.itemDistance 
+          ? calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), draggingItem)
+          : []
         
         // Find relevant snap lines based on alignment (not proximity)
         const relevantSnapLines = findRelevantSnapLines(allSnapLines, draggingItem)
@@ -507,17 +513,8 @@ const Grid: React.FC<GridProps> = ({
           item.id === wasResizingId ? { ...item, x: snappedX, y: snappedY, ...finalSize } : item,
         )
       } else {
-        finalLayout = effectiveLayout.map((item: GridItem) =>
-          item.id === wasResizingId
-            ? {
-                ...item,
-                x: lastValidPosForSim.x,
-                y: lastValidPosForSim.y,
-                width: lastValidPosForSim.width,
-                height: lastValidPosForSim.height,
-              }
-            : item,
-        )
+        // If resize would cause collision, keep the original size
+        finalLayout = effectiveLayout
       }
       onLayoutChange(finalLayout, effectiveLayout)
     },
@@ -611,15 +608,44 @@ const Grid: React.FC<GridProps> = ({
         snappedRect.y = snapResult.y
       }
 
-      const newLayout = effectiveLayout.map((item) => (item.id === itemId ? { ...item, ...snappedRect } : item))
-      onLayoutChange(newLayout, effectiveLayout)
+      // Check for collisions if collision handling is enabled
+      const originalItem = effectiveLayout.find(item => item.id === itemId)
+      if (!originalItem) return
+      
+      if (!disableCollision && !originalItem.disableCollision) {
+        // Check if the new size would cause collisions
+        const result = simulateQueueShift(
+          effectiveLayout,
+          itemId,
+          { x: snappedRect.x, y: snappedRect.y },
+          gridUnitSize,
+          gap,
+          width,
+          height,
+          { width: snappedRect.width, height: snappedRect.height },
+          shiftOnCollision
+        )
+        
+        if (result.canDrop) {
+          // Apply the resize with collision handling
+          onLayoutChange(result.previewLayout, effectiveLayout)
+        } else {
+          // Resize would cause collision and can't be resolved - don't resize
+        }
+      } else {
+        // No collision checking - just apply the new size
+        const newLayout = effectiveLayout.map((item) => (item.id === itemId ? { ...item, ...snappedRect } : item))
+        onLayoutChange(newLayout, effectiveLayout)
+      }
     },
-    [effectiveLayout, onLayoutChange, effSnapX, effSnapY, effResizeW, effResizeH, showSnapLines, width, height, gridUnitSize, snapBehavior, enableItemSnapping, snapThreshold],
+    [effectiveLayout, onLayoutChange, effSnapX, effSnapY, effResizeW, effResizeH, showSnapLines, width, height, gridUnitSize, snapBehavior, enableItemSnapping, snapThreshold, disableCollision, gap, shiftOnCollision],
   )
 
   const handleTransformerRotate = useCallback(
     (itemId: string, angle: number) => {
-      const newLayout = effectiveLayout.map((item) => (item.id === itemId ? { ...item, rotation: angle } : item))
+      // Normalize 360 to 0
+      const normalizedAngle = angle >= 360 ? 0 : angle
+      const newLayout = effectiveLayout.map((item) => (item.id === itemId ? { ...item, rotation: normalizedAngle } : item))
       onLayoutChange(newLayout, effectiveLayout)
     },
     [effectiveLayout, onLayoutChange],
@@ -628,12 +654,16 @@ const Grid: React.FC<GridProps> = ({
   const handleTransformerRotatePreview = useCallback(
     (itemId: string, angle: number | null) => {
       if (angle !== null) {
-        setPreviewRotation({ itemId, angle })
+        // Normalize 360 to 0 for preview as well
+        const normalizedAngle = angle >= 360 ? 0 : angle
+        setPreviewRotation({ itemId, angle: normalizedAngle })
+        // Call external callback to expose rotation preview
+        onRotationPreview?.(itemId, normalizedAngle)
       } else {
         setPreviewRotation(null)
+        // Call external callback to expose rotation preview
+        onRotationPreview?.(itemId, angle)
       }
-      // Call external callback to expose rotation preview
-      onRotationPreview?.(itemId, angle)
     },
     [onRotationPreview],
   )
@@ -671,7 +701,9 @@ const Grid: React.FC<GridProps> = ({
           
           // Calculate distance indicators during transformer resize
           const resizingItem = { id: itemId, x: snappedRect.x, y: snappedRect.y, ...currentItemSize }
-          const distanceIndicators = calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), resizingItem)
+          const distanceIndicators = snapBehavior.itemDistance 
+            ? calculateDistanceIndicators(effectiveLayout.filter(item => item.id !== itemId), resizingItem)
+            : []
           
           // Find relevant snap lines for display
           const relevantSnapLines = findRelevantSnapLines(allSnapLines, resizingItem)
@@ -691,6 +723,100 @@ const Grid: React.FC<GridProps> = ({
     },
     [showSnapLines, width, height, gridUnitSize, snapBehavior, enableItemSnapping, snapThreshold, effectiveLayout],
   )
+
+  // Keyboard event handler
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (disableKeyboardMovement || isLocked || !selectedItemId) return
+    
+    // Only handle arrow keys
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return
+    
+    e.preventDefault()
+    
+    const selectedItem = layout.find(item => item.id === selectedItemId)
+    if (!selectedItem || selectedItem.locked) return
+    
+    let newX = selectedItem.x
+    let newY = selectedItem.y
+    
+    // Move by grid unit size, or 1px in canvas mode
+    // Hold Shift for 10x movement
+    const multiplier = e.shiftKey ? 10 : 1
+    const moveX = (gridUnitX > 0 ? gridUnitX : 1) * multiplier
+    const moveY = (gridUnitY > 0 ? gridUnitY : 1) * multiplier
+    
+    switch (e.key) {
+      case 'ArrowLeft':
+        newX -= moveX
+        break
+      case 'ArrowRight':
+        newX += moveX
+        break
+      case 'ArrowUp':
+        newY -= moveY
+        break
+      case 'ArrowDown':
+        newY += moveY
+        break
+    }
+    
+    // Ensure within bounds
+    newX = Math.max(0, Math.min(width - selectedItem.width, newX))
+    newY = Math.max(0, Math.min(height - selectedItem.height, newY))
+    
+    // Check collision if enabled
+    const movedItem = { ...selectedItem, x: newX, y: newY }
+    
+    if (disableCollision || selectedItem.disableCollision) {
+      // No collision handling - just update position
+      const newLayout = effectiveLayout.map(item => 
+        item.id === selectedItemId ? movedItem : item
+      )
+      onLayoutChange(newLayout, effectiveLayout)
+    } else {
+      // Check for collisions
+      const hasCollision = effectiveLayout.some(item => {
+        if (item.id === selectedItemId) return false
+        return doItemsOverlap(movedItem, item, gap)
+      })
+      
+      if (!hasCollision) {
+        // No collision - safe to move
+        const newLayout = effectiveLayout.map(item => 
+          item.id === selectedItemId ? movedItem : item
+        )
+        onLayoutChange(newLayout, effectiveLayout)
+      } else if (shiftOnCollision) {
+        // Try to shift items to make space
+        const result = simulateQueueShift(
+          effectiveLayout,
+          selectedItemId,
+          { x: newX, y: newY },
+          gridUnitSize,
+          gap,
+          width,
+          height,
+          { width: selectedItem.width, height: selectedItem.height },
+          shiftOnCollision
+        )
+        
+        if (result.canDrop) {
+          // Update with the shifted layout
+          onLayoutChange(result.previewLayout, effectiveLayout)
+        }
+        // If canDrop is false, don't move the item at all
+      }
+      // If collision and !shiftOnCollision, don't move at all
+    }
+  }, [disableKeyboardMovement, isLocked, selectedItemId, layout, effectiveLayout, gridUnitX, gridUnitY, width, height, shiftOnCollision, disableCollision, gap, gridUnitSize, onLayoutChange])
+  
+  // Add keyboard event listener
+  useEffect(() => {
+    if (!disableKeyboardMovement) {
+      window.addEventListener('keydown', handleKeyDown)
+      return () => window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [handleKeyDown, disableKeyboardMovement])
 
   // Rendering
   const childrenMap = new Map<string, ReactNode>()
@@ -732,10 +858,21 @@ const Grid: React.FC<GridProps> = ({
         handleCanvasClick(e)
       }}
     >
-      {showGridLines && (
+      {showGridLines && gridUnitX >= 5 && gridUnitY >= 5 && (
         <div
           className={combinedGridLinesClass}
-          style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}
+          style={{ 
+            position: 'absolute', 
+            inset: 0, 
+            pointerEvents: 'none', 
+            zIndex: 0,
+            backgroundImage: gridLineStyle === 'solid' 
+              ? `linear-gradient(to right, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px), linear-gradient(to bottom, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px)`
+              : gridLineStyle === 'dashed'
+              ? `repeating-linear-gradient(to right, ${gridLineColor}, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px, transparent ${gridUnitX / 2}px), repeating-linear-gradient(to bottom, ${gridLineColor}, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px, transparent ${gridUnitY / 2}px)`
+              : `repeating-linear-gradient(to right, ${gridLineColor}, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px, transparent ${gridUnitX / 4}px), repeating-linear-gradient(to bottom, ${gridLineColor}, ${gridLineColor} ${gridLineWidth}px, transparent ${gridLineWidth}px, transparent ${gridUnitY / 4}px)`,
+            backgroundSize: `${gridUnitX}px ${gridUnitY}px`
+          }}
         />
       )}
       {dropPoint && showDropZoneShadow && (
