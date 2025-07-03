@@ -124,18 +124,29 @@ export const Transformer: React.FC<TransformerProps> = ({
           let newRotation = (angleToTarget * 180) / Math.PI + 90
           
           // Apply snap points for common angles
-          const snapPoints = [0, 45, 90, 135, 180, 225, 270, 315, 360]
-          const snapThreshold = 5 // degrees
+          const snapPoints = [0, 45, 90, 135, 180, 225, 270, 315]
+          const snapThreshold = 3 // degrees - reduced for more precision
           
           // Normalize rotation to 0-360 range
           newRotation = ((newRotation % 360) + 360) % 360
           
-          // Check for snap points
-          for (const snapPoint of snapPoints) {
-            if (Math.abs(newRotation - snapPoint) <= snapThreshold) {
-              newRotation = snapPoint
-              break
+          // Only snap if holding Shift key (for precise control)
+          // Check if Shift is being held by looking at the current event
+          const shouldSnap = moveEvent.shiftKey
+          
+          // Check for snap points only if shift is held
+          if (shouldSnap) {
+            for (const snapPoint of snapPoints) {
+              if (Math.abs(newRotation - snapPoint) <= snapThreshold) {
+                newRotation = snapPoint
+                break
+              }
             }
+          }
+          
+          // Normalize 360 to 0
+          if (newRotation >= 360) {
+            newRotation = 0
           }
           
           // Update ref and notify parent for preview
@@ -380,7 +391,10 @@ export const Transformer: React.FC<TransformerProps> = ({
           </div>
 
           {/* Rotation angle display */}
-          {(previewRotation !== null || item.rotation) && (
+          {(() => {
+            const currentAngle = previewRotation !== null ? previewRotation : (item.rotation || 0)
+            return currentAngle !== 0
+          })() && (
             <div
               className={`grid-transformer-rotation-display ${rotationDisplayClassName}`}
               style={{

@@ -68,36 +68,91 @@ export function calculateDistanceIndicators(
     return itemTop < draggingBottom && itemBottom > draggingTop
   })
   
-  // If there are horizontally aligned items, show distances
+  // Show distances for horizontally aligned items
   if (horizontallyAligned.length > 0) {
     const allItems = [...horizontallyAligned, draggingItem].sort((a, b) => a.x - b.x)
     
-    // Show distance indicators for adjacent pairs
-    for (let i = 0; i < allItems.length - 1; i++) {
-      const leftItem = allItems[i]
-      const rightItem = allItems[i + 1]
-      const distance = rightItem.x - (leftItem.x + leftItem.width)
-      
-      if (distance > 0) {
-        const gapStart = leftItem.x + leftItem.width
-        const gapEnd = rightItem.x
+    // Check if all items are in the same row (vertically aligned)
+    const allInSameRow = allItems.every(item => {
+      const itemTop = item.y
+      const itemBottom = item.y + item.height
+      return allItems.every(otherItem => {
+        const otherTop = otherItem.y
+        const otherBottom = otherItem.y + otherItem.height
+        // Check for vertical overlap (same row)
+        return itemTop < otherBottom && itemBottom > otherTop
+      })
+    })
+    
+    if (allInSameRow) {
+      // Show distances between adjacent pairs
+      for (let i = 0; i < allItems.length - 1; i++) {
+        const leftItem = allItems[i]
+        const rightItem = allItems[i + 1]
+        const distance = rightItem.x - (leftItem.x + leftItem.width)
         
-        // Calculate Y position for the line - use the overlapping region
-        const overlapTop = Math.max(leftItem.y, rightItem.y, draggingItem.y)
-        const overlapBottom = Math.min(leftItem.y + leftItem.height, rightItem.y + rightItem.height, draggingItem.y + draggingItem.height)
-        const gapPosition = (overlapTop + overlapBottom) / 2
-        
-        snapLines.push({
-          id: `distance-indicator-h-${lineId++}`,
-          type: 'horizontal',
-          position: gapPosition,
-          start: gapStart,
-          end: gapEnd,
-          snapType: 'item-distance',
-          distance: Math.round(distance),
-          referenceItems: [leftItem.id, rightItem.id]
-        })
+        if (distance > 0) {
+          const gapStart = leftItem.x + leftItem.width
+          const gapEnd = rightItem.x
+          
+          // Calculate Y position for the line - use the overlapping region
+          const overlapTop = Math.max(leftItem.y, rightItem.y, draggingItem.y)
+          const overlapBottom = Math.min(leftItem.y + leftItem.height, rightItem.y + rightItem.height, draggingItem.y + draggingItem.height)
+          const gapPosition = (overlapTop + overlapBottom) / 2
+          
+          snapLines.push({
+            id: `distance-indicator-h-${lineId++}`,
+            type: 'horizontal',
+            position: gapPosition,
+            start: gapStart,
+            end: gapEnd,
+            snapType: 'item-distance',
+            distance: Math.round(distance),
+            referenceItems: [leftItem.id, rightItem.id]
+          })
+        }
       }
+    } else {
+      // Show distances from each item to the dragging item
+      horizontallyAligned.forEach(item => {
+        const draggingRight = draggingItem.x + draggingItem.width
+        const itemRight = item.x + item.width
+        
+        let distance = 0
+        let gapStart = 0
+        let gapEnd = 0
+        
+        // Check if item is to the left of dragging item
+        if (itemRight < draggingItem.x) {
+          distance = draggingItem.x - itemRight
+          gapStart = itemRight
+          gapEnd = draggingItem.x
+        }
+        // Check if item is to the right of dragging item
+        else if (item.x > draggingRight) {
+          distance = item.x - draggingRight
+          gapStart = draggingRight
+          gapEnd = item.x
+        }
+        
+        if (distance > 0) {
+          // Calculate Y position for the line - use the overlapping region
+          const overlapTop = Math.max(item.y, draggingItem.y)
+          const overlapBottom = Math.min(item.y + item.height, draggingItem.y + draggingItem.height)
+          const gapPosition = (overlapTop + overlapBottom) / 2
+          
+          snapLines.push({
+            id: `distance-indicator-h-${lineId++}`,
+            type: 'horizontal',
+            position: gapPosition,
+            start: gapStart,
+            end: gapEnd,
+            snapType: 'item-distance',
+            distance: Math.round(distance),
+            referenceItems: [draggingItem.id, item.id]
+          })
+        }
+      })
     }
   }
   
@@ -112,36 +167,91 @@ export function calculateDistanceIndicators(
     return itemLeft < draggingRight && itemRight > draggingLeft
   })
   
-  // If there are vertically aligned items, show distances
+  // Show distances for vertically aligned items
   if (verticallyAligned.length > 0) {
     const allItems = [...verticallyAligned, draggingItem].sort((a, b) => a.y - b.y)
     
-    // Show distance indicators for adjacent pairs
-    for (let i = 0; i < allItems.length - 1; i++) {
-      const topItem = allItems[i]
-      const bottomItem = allItems[i + 1]
-      const distance = bottomItem.y - (topItem.y + topItem.height)
-      
-      if (distance > 0) {
-        const gapStart = topItem.y + topItem.height
-        const gapEnd = bottomItem.y
+    // Check if all items are in the same column (horizontally aligned)
+    const allInSameColumn = allItems.every(item => {
+      const itemLeft = item.x
+      const itemRight = item.x + item.width
+      return allItems.every(otherItem => {
+        const otherLeft = otherItem.x
+        const otherRight = otherItem.x + otherItem.width
+        // Check for horizontal overlap (same column)
+        return itemLeft < otherRight && itemRight > otherLeft
+      })
+    })
+    
+    if (allInSameColumn) {
+      // Show distances between adjacent pairs
+      for (let i = 0; i < allItems.length - 1; i++) {
+        const topItem = allItems[i]
+        const bottomItem = allItems[i + 1]
+        const distance = bottomItem.y - (topItem.y + topItem.height)
         
-        // Calculate X position for the line - use the overlapping region
-        const overlapLeft = Math.max(topItem.x, bottomItem.x, draggingItem.x)
-        const overlapRight = Math.min(topItem.x + topItem.width, bottomItem.x + bottomItem.width, draggingItem.x + draggingItem.width)
-        const gapPosition = (overlapLeft + overlapRight) / 2
-        
-        snapLines.push({
-          id: `distance-indicator-v-${lineId++}`,
-          type: 'vertical',
-          position: gapPosition,
-          start: gapStart,
-          end: gapEnd,
-          snapType: 'item-distance',
-          distance: Math.round(distance),
-          referenceItems: [topItem.id, bottomItem.id]
-        })
+        if (distance > 0) {
+          const gapStart = topItem.y + topItem.height
+          const gapEnd = bottomItem.y
+          
+          // Calculate X position for the line - use the overlapping region
+          const overlapLeft = Math.max(topItem.x, bottomItem.x, draggingItem.x)
+          const overlapRight = Math.min(topItem.x + topItem.width, bottomItem.x + bottomItem.width, draggingItem.x + draggingItem.width)
+          const gapPosition = (overlapLeft + overlapRight) / 2
+          
+          snapLines.push({
+            id: `distance-indicator-v-${lineId++}`,
+            type: 'vertical',
+            position: gapPosition,
+            start: gapStart,
+            end: gapEnd,
+            snapType: 'item-distance',
+            distance: Math.round(distance),
+            referenceItems: [topItem.id, bottomItem.id]
+          })
+        }
       }
+    } else {
+      // Show distances from each item to the dragging item
+      verticallyAligned.forEach(item => {
+        const draggingBottom = draggingItem.y + draggingItem.height
+        const itemBottom = item.y + item.height
+        
+        let distance = 0
+        let gapStart = 0
+        let gapEnd = 0
+        
+        // Check if item is above dragging item
+        if (itemBottom < draggingItem.y) {
+          distance = draggingItem.y - itemBottom
+          gapStart = itemBottom
+          gapEnd = draggingItem.y
+        }
+        // Check if item is below dragging item
+        else if (item.y > draggingBottom) {
+          distance = item.y - draggingBottom
+          gapStart = draggingBottom
+          gapEnd = item.y
+        }
+        
+        if (distance > 0) {
+          // Calculate X position for the line - use the overlapping region
+          const overlapLeft = Math.max(item.x, draggingItem.x)
+          const overlapRight = Math.min(item.x + item.width, draggingItem.x + draggingItem.width)
+          const gapPosition = (overlapLeft + overlapRight) / 2
+          
+          snapLines.push({
+            id: `distance-indicator-v-${lineId++}`,
+            type: 'vertical',
+            position: gapPosition,
+            start: gapStart,
+            end: gapEnd,
+            snapType: 'item-distance',
+            distance: Math.round(distance),
+            referenceItems: [draggingItem.id, item.id]
+          })
+        }
+      })
     }
   }
   

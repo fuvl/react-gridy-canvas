@@ -26,6 +26,7 @@ A flexible grid/canvas layout component for React, built with TypeScript. It uti
   - **Rotation Support:** Items can be rotated with visual rotation handles.
   - **Z-Index Control:** Layer ordering for overlapping items.
   - **Transformer Tool:** Konva-style visual editing controls with resize anchors and rotation handles.
+  - **Keyboard Movement:** Arrow key support for moving selected items by grid units.
 
 ## Installation
 
@@ -150,6 +151,7 @@ export default MyComponent
 | `snapBehavior`             | `SnapBehaviorConfig`                                                                                                                                               | `{ itemEdges: true, itemCenters: true }` | Configuration object for enabling/disabling specific snap behaviors                                                                                       |
 | `onRotationPreview`        | `(itemId: string, angle: number &#124; null) => void`                                                                                                             | `undefined`                   | Callback during rotation preview; provides item ID and current rotation angle (null when preview ends)                                                   |
 | `transformerStyle`         | `TransformerStyle`                                                                                                                                                 | `{}`                          | Configuration object for customizing transformer appearance and behavior                                                                                   |
+| `disableKeyboardMovement`  | `boolean`                                                                                                                                                          | `false`                       | If `true`, disables arrow key movement for selected items                                                                                                |
 
 ## GridItem Properties
 
@@ -320,9 +322,9 @@ Full visual customization is available through the `snapLinesStyle` prop:
     snapLineAnimationDuration: 150,
     
     // Distance labels
-    showSnapDistance: true,
-    snapDistanceColor: '#ffffff',
-    snapDistanceBackground: '#1f2937',
+    showDistanceLabel: true,
+    distanceLabelColor: '#ffffff',
+    distanceLabelBackground: '#1f2937',
     
     // Triangle markers
     distanceTriangleSize: 4,
@@ -347,6 +349,21 @@ Full visual customization is available through the `snapLinesStyle` prop:
 - **Precise Positioning**: Items actually snap to the indicated positions
 - **Works with Transformer**: Snap lines work during both drag operations and transformer resize
 - **Scale Aware**: All visual elements scale correctly with the canvas zoom level
+
+## Keyboard Controls
+
+The grid supports keyboard movement for selected items using arrow keys:
+
+- **Arrow Keys**: Move the selected item by one grid unit in the corresponding direction
+- **Shift + Arrow Keys**: Move the selected item by 10x the normal distance for faster movement
+- **Movement Distance**: 
+  - Grid mode: Items move by the configured `gridUnitSize` (or custom X/Y values if using array format)
+  - Canvas mode: Items move by 1 pixel when `gridUnitSize` is 0 (hold Shift for 10 pixels)
+- **Collision Handling**: Keyboard movement respects collision settings - items will shift others if `shiftOnCollision` is enabled
+- **Boundary Constraints**: Items cannot be moved outside the canvas boundaries
+- **Lock Support**: Locked items cannot be moved with keyboard
+
+To disable keyboard movement, set `disableKeyboardMovement={true}` on the Grid component.
 
 ## Building
 

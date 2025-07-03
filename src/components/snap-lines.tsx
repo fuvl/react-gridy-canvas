@@ -17,10 +17,10 @@ const defaultStyle: Required<SnapLinesStyle> = {
   snapLineStyle: 'solid',
   snapLineOpacity: 0.8,
   snapLineAnimationDuration: 150,
-  showSnapDistance: true,
-  snapDistanceClassName: 'grid-snap-distance',
-  snapDistanceColor: '#ffffff',
-  snapDistanceBackground: '#1f2937'
+  showDistanceLabel: true,
+  distanceLabelClassName: 'grid-snap-distance',
+  distanceLabelColor: '#ffffff',
+  distanceLabelBackground: '#1f2937'
 }
 
 export const SnapLines: React.FC<SnapLinesProps> = ({ 
@@ -142,9 +142,9 @@ export const SnapLines: React.FC<SnapLinesProps> = ({
             )}
             
             {/* Distance label for distance-based snap lines */}
-            {isDistanceLine && line.distance && mergedStyle.showSnapDistance && (
+            {isDistanceLine && line.distance && mergedStyle.showDistanceLabel && (
               <div
-                className={mergedStyle.snapDistanceClassName}
+                className={mergedStyle.distanceLabelClassName}
                 style={{
                   position: 'absolute',
                   left: line.type === 'vertical' ? line.position : (line.start + line.end) / 2,
@@ -152,8 +152,8 @@ export const SnapLines: React.FC<SnapLinesProps> = ({
                   fontSize: `${12 / scale}px`,
                   padding: `${4 / scale}px ${8 / scale}px`,
                   borderRadius: `${4 / scale}px`,
-                  color: mergedStyle.snapDistanceColor,
-                  backgroundColor: mergedStyle.snapDistanceBackground,
+                  color: mergedStyle.distanceLabelColor,
+                  backgroundColor: mergedStyle.distanceLabelBackground,
                   pointerEvents: 'none',
                   whiteSpace: 'nowrap',
                   zIndex: 2000,
