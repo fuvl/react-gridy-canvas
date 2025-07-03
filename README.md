@@ -365,20 +365,6 @@ The grid supports keyboard movement for selected items using arrow keys:
 
 To disable keyboard movement, set `disableKeyboardMovement={true}` on the Grid component.
 
-## Building
-
-To build the package, navigate to the `packages` directory and run:
-
-```bash
-npm run build
-# or
-yarn build
-# or
-pnpm build
-```
-
-This will generate the `dist` folder containing the JavaScript bundles (ESM and CJS), type definitions, and the extracted CSS file.
-
 ## License
 
 [MIT](./LICENSE)
