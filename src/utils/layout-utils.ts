@@ -33,6 +33,7 @@ export function getOverlapRatio(item1: GridItem, item2: GridItem): number {
 }
 
 export function snapToGrid(value: number, grid: number): number {
-  const safeGrid = Math.max(1, grid)
-  return Math.round(value / safeGrid) * safeGrid
+  // If grid is 0 or less, return the value as-is for free movement
+  if (grid <= 0) return value
+  return Math.round(value / grid) * grid
 }
