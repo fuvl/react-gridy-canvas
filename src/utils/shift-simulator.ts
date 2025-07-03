@@ -199,7 +199,7 @@ export function simulateQueueShift(
   const processed = new Set<string>()
 
   // helper: snap down to ensure shifts align exactly
-  const snapFloor = (value: number, grid: number) => grid > 0 ? Math.floor(value / grid) * grid : value
+  const snapFloor = (value: number, grid: number) => (grid > 0 ? Math.floor(value / grid) * grid : value)
 
   while (queue.length > 0) {
     const currentId = queue.shift()

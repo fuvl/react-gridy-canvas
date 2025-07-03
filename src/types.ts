@@ -11,33 +11,33 @@ export interface TransformerStyle {
   rotationHandleClassName?: string
   rotationLineClassName?: string
   rotationDisplayClassName?: string
-  
+
   /** Border styles */
   borderColor?: string
   borderWidth?: number
   borderStyle?: string
   borderRadius?: number
-  
+
   /** Anchor styles */
   anchorSize?: number
   anchorColor?: string
   anchorBorderColor?: string
   anchorBorderWidth?: number
   anchorBorderRadius?: number
-  
+
   /** Rotation handle styles */
   rotationHandleSize?: number
   rotationHandleColor?: string
   rotationHandleDistance?: number
-  
+
   /** Rotation line styles */
   rotationLineColor?: string
   rotationLineWidth?: number
-  
+
   /** Rotation display styles */
   rotationDisplayBackground?: string
   rotationDisplayColor?: string
-  
+
   /** Visibility options */
   hideAnchors?: string[] // Array of anchor positions to hide: 'tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'
   hideRotationHandle?: boolean
@@ -70,17 +70,17 @@ export interface SnapLinesStyle {
   className?: string
   gridSnapLineClassName?: string
   itemSnapLineClassName?: string
-  
+
   /** Line styles */
   gridSnapLineColor?: string
   itemSnapLineColor?: string
   snapLineWidth?: number
   snapLineStyle?: 'solid' | 'dashed' | 'dotted'
-  
+
   /** Opacity and animation */
   snapLineOpacity?: number
   snapLineAnimationDuration?: number
-  
+
   /** Distance label/badge styles */
   showDistanceLabel?: boolean
   distanceLabelClassName?: string

@@ -142,7 +142,7 @@
 }
 
 /* Hide react-rnd resize handle container when resizing is disabled */
-.grid-item > div:last-child:not([style*="transform"]) {
+.grid-item > div:last-child:not([style*='transform']) {
   display: none !important;
 }
 
@@ -150,7 +150,7 @@
 .grid-transformer {
   position: absolute;
   pointer-events: none;
-  border: 2px solid #007AFF;
+  border: 2px solid #007aff;
   border-radius: 2px;
   z-index: 1000;
 }
