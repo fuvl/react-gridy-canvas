@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useRef } from 'react'
 import { GridItem } from '../types'
 
 export interface TransformerProps {
@@ -38,14 +38,14 @@ export interface TransformerProps {
   hideRotationHandle?: boolean
 }
 
-export const Transformer: React.FC<TransformerProps> = ({ 
-  item, 
-  scale = 1, 
-  previewRotation, 
-  onResize, 
-  onRotate, 
-  onRotatePreview, 
-  onResizePreview, 
+export const Transformer: React.FC<TransformerProps> = ({
+  item,
+  scale = 1,
+  previewRotation,
+  onResize,
+  onRotate,
+  onRotatePreview,
+  onResizePreview,
   className = '',
   // Class names
   anchorClassName = '',
@@ -72,7 +72,7 @@ export const Transformer: React.FC<TransformerProps> = ({
   rotationDisplayBackground,
   rotationDisplayColor,
   hideAnchors = [],
-  hideRotationHandle = false
+  hideRotationHandle = false,
 }) => {
   const transformerRef = useRef<HTMLDivElement>(null)
   const isDraggingRef = useRef(false)
@@ -100,44 +100,55 @@ export const Transformer: React.FC<TransformerProps> = ({
         const centerX = item.x + item.width / 2
         const centerY = item.y + item.height / 2
         const startRotation = item.rotation || 0
-        
+
         // Calculate where the handle is initially positioned (at top of item)
         const handleAngleRad = (startRotation * Math.PI) / 180 - Math.PI / 2 // -90 degrees because handle is at top
         const handleX = centerX + rotationHandleDistance * Math.cos(handleAngleRad)
         const handleY = centerY + rotationHandleDistance * Math.sin(handleAngleRad)
-        
+
         // Calculate offset from handle to initial mouse position
         const offsetX = e.clientX / scale - handleX
         const offsetY = e.clientY / scale - handleY
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
           if (!isDraggingRef.current) return
-          
+
           // Calculate where the handle should be based on mouse position minus offset
           const targetX = moveEvent.clientX / scale - offsetX
           const targetY = moveEvent.clientY / scale - offsetY
-          
+
           // Calculate angle from center to target handle position
           const angleToTarget = Math.atan2(targetY - centerY, targetX - centerX)
-          
+
           // Convert to degrees and adjust for handle being at top (add 90 degrees)
           let newRotation = (angleToTarget * 180) / Math.PI + 90
-          
+
           // Apply snap points for common angles
-          const snapPoints = [0, 45, 90, 135, 180, 225, 270, 315, 360]
-          const snapThreshold = 5 // degrees
-          
+          const snapPoints = [0, 45, 90, 135, 180, 225, 270, 315]
+          const snapThreshold = 3 // degrees - reduced for more precision
+
           // Normalize rotation to 0-360 range
           newRotation = ((newRotation % 360) + 360) % 360
-          
-          // Check for snap points
-          for (const snapPoint of snapPoints) {
-            if (Math.abs(newRotation - snapPoint) <= snapThreshold) {
-              newRotation = snapPoint
-              break
+
+          // Only snap if holding Shift key (for precise control)
+          // Check if Shift is being held by looking at the current event
+          const shouldSnap = moveEvent.shiftKey
+
+          // Check for snap points only if shift is held
+          if (shouldSnap) {
+            for (const snapPoint of snapPoints) {
+              if (Math.abs(newRotation - snapPoint) <= snapThreshold) {
+                newRotation = snapPoint
+                break
+              }
             }
           }
-          
+
+          // Normalize 360 to 0
+          if (newRotation >= 360) {
+            newRotation = 0
+          }
+
           // Update ref and notify parent for preview
           currentRotationRef.current = newRotation
           onRotatePreview?.(newRotation)
@@ -148,10 +159,10 @@ export const Transformer: React.FC<TransformerProps> = ({
             // Only update the layout when drag ends
             onRotate?.(currentRotationRef.current)
           }
-          
+
           // Clear preview rotation
           onRotatePreview?.(null)
-          
+
           isDraggingRef.current = false
           currentRotationRef.current = null
           document.removeEventListener('mousemove', handleMouseMove)
@@ -167,22 +178,22 @@ export const Transformer: React.FC<TransformerProps> = ({
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
           if (!isDraggingRef.current) return
-          
+
           const deltaX = (moveEvent.clientX - e.clientX) / scale
           const deltaY = (moveEvent.clientY - e.clientY) / scale
-          
+
           let newRect = { ...lastValidRect }
 
           switch (handle) {
             case 'tl': // top-left
               const proposedWidthTL = startRect.width - deltaX
               const proposedHeightTL = startRect.height - deltaY
-              
+
               if (proposedWidthTL >= 10) {
                 newRect.x = startRect.x + deltaX
                 newRect.width = proposedWidthTL
               }
-              
+
               if (proposedHeightTL >= 10) {
                 newRect.y = startRect.y + deltaY
                 newRect.height = proposedHeightTL
@@ -229,7 +240,7 @@ export const Transformer: React.FC<TransformerProps> = ({
               newRect.width = Math.max(10, startRect.width + deltaX)
               break
           }
-          
+
           // Update last valid rect only if we made changes
           if (newRect.width >= 10 && newRect.height >= 10) {
             lastValidRect = { ...newRect }
@@ -245,10 +256,10 @@ export const Transformer: React.FC<TransformerProps> = ({
             // Only update the layout when resize ends
             onResize?.(currentResizeRef.current)
           }
-          
+
           // Clear preview resize
           onResizePreview?.(null)
-          
+
           isDraggingRef.current = false
           currentResizeRef.current = null
           document.removeEventListener('mousemove', handleMouseMove)
@@ -262,7 +273,6 @@ export const Transformer: React.FC<TransformerProps> = ({
     [item, scale, onResize, onRotate, onRotatePreview, onResizePreview],
   )
 
-
   return (
     <div
       ref={transformerRef}
@@ -274,7 +284,7 @@ export const Transformer: React.FC<TransformerProps> = ({
         height: item.height,
         transform: (() => {
           // Use preview rotation if available, otherwise use item rotation
-          const currentRotation = previewRotation !== null ? previewRotation : item.rotation
+          const currentRotation = previewRotation ?? item.rotation
           return currentRotation ? `rotate(${currentRotation}deg)` : undefined
         })(),
         transformOrigin: 'center center',
@@ -380,7 +390,10 @@ export const Transformer: React.FC<TransformerProps> = ({
           </div>
 
           {/* Rotation angle display */}
-          {(previewRotation !== null || item.rotation) && (
+          {(() => {
+            const currentAngle = previewRotation ?? item.rotation ?? 0
+            return currentAngle !== 0
+          })() && (
             <div
               className={`grid-transformer-rotation-display ${rotationDisplayClassName}`}
               style={{
@@ -399,7 +412,7 @@ export const Transformer: React.FC<TransformerProps> = ({
                 whiteSpace: 'nowrap',
               }}
             >
-              {Math.round(previewRotation !== null ? previewRotation : (item.rotation || 0))}°
+              {Math.round(previewRotation ?? item.rotation ?? 0)}°
             </div>
           )}
 

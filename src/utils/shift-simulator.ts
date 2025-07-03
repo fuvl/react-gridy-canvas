@@ -36,8 +36,9 @@ export function simulateQueueShift(
   const actualWidth = draggedSize?.width ?? dragged.width
   const actualHeight = draggedSize?.height ?? dragged.height
   // compute pixel gap separately for X and Y axes
-  const pixelGapX = gap * snapX
-  const pixelGapY = gap * snapY
+  // In canvas mode (snapX/snapY = 0), use the gap directly instead of multiplying by 0
+  const pixelGapX = snapX > 0 ? gap * snapX : gap
+  const pixelGapY = snapY > 0 ? gap * snapY : gap
   // snap drop position to grid separately on X and Y
   const snappedDropPos = {
     x: snapToGrid(dropPos.x, snapX),
@@ -49,6 +50,7 @@ export function simulateQueueShift(
     ...snappedDropPos,
     width: actualWidth,
     height: actualHeight,
+    rotation: dragged.rotation,
   }
   const skipCollision = !!dragged.disableCollision
   // If this item should ignore collisions, allow unrestricted drop
@@ -98,6 +100,7 @@ export function simulateQueueShift(
             y: dragStart.y,
             width: dragStart.width,
             height: dragStart.height,
+            rotation: dragged.rotation,
           }
         : undefined)
   }
@@ -135,21 +138,13 @@ export function simulateQueueShift(
   }
 
   if (!shiftOnCollision) {
+    // When shiftOnCollision is false, don't allow overlaps - return canDrop: false
     return {
-      previewLayout: layout.map((item) =>
-        item.id === draggedId
-          ? {
-              ...item,
-              ...snappedDropPos,
-              width: actualWidth,
-              height: actualHeight,
-            }
-          : item,
-      ),
+      previewLayout: layout,
       canDrop: false,
-      draggedPreview: newDropZone,
-      dropZone: newDropZone,
-      showShadow: !!newDropZone,
+      draggedPreview,
+      dropZone: dropZone || undefined,
+      showShadow: false,
     }
   }
 
@@ -204,7 +199,7 @@ export function simulateQueueShift(
   const processed = new Set<string>()
 
   // helper: snap down to ensure shifts align exactly
-  const snapFloor = (value: number, grid: number) => Math.floor(value / grid) * grid
+  const snapFloor = (value: number, grid: number) => (grid > 0 ? Math.floor(value / grid) * grid : value)
 
   while (queue.length > 0) {
     const currentId = queue.shift()
@@ -347,6 +342,7 @@ export function simulateQueueShift(
           y: virtualMap.get(draggedId)!.y,
           width: virtualMap.get(draggedId)!.width,
           height: virtualMap.get(draggedId)!.height,
+          rotation: virtualMap.get(draggedId)!.rotation,
         }
       : undefined,
     dropZone: virtualMap.get(draggedId)
@@ -356,6 +352,7 @@ export function simulateQueueShift(
           y: virtualMap.get(draggedId)!.y,
           width: virtualMap.get(draggedId)!.width,
           height: virtualMap.get(draggedId)!.height,
+          rotation: virtualMap.get(draggedId)!.rotation,
         }
       : undefined,
     showShadow: true,
