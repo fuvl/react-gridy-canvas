@@ -1,14 +1,12 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'], // Entry point is inside src/
-  outDir: 'dist',
+  entry: ['src/index.ts'],
   format: ['esm', 'cjs'],
   dts: true,
   splitting: false,
-  sourcemap: true,
+  sourcemap: false,
   clean: true,
   external: ['react', 'react-dom'],
-  // Extract CSS to dist/index.css. Users will need to import it.
   injectStyle: false,
 })
